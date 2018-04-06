@@ -91,12 +91,22 @@ struct Object
     }
 };
 
+bool isShadow(Object objs[2],Vector n,Vector light){
+  double distance = std::numeric_limits<double>::infinity();
+  Vector l = Vector(light.x, -light.y, light.z);
+  for(int i = 0;i<sizeof(objs)/sizeof(objs[0]);i++){
+    if (objs[i].sphere.intersect(n, l, distance) && distance > 0) {
+      return true;
+    }
+  }
+  return false;
+}
 
 int main(){
 
   double intensity = .5;
   Sphere sphere1(Vector(150,150,50),50);
-  Sphere sphere2(Vector(35,175,50),25);
+  Sphere sphere2(Vector(150,50,50),25);
   Vector blue(0,87,255);
   Vector green(60,167,28);
   Object objs[2] = {Object(sphere1,blue,.5,1.5,1,50),Object(sphere2,green,1,1.5,1,50)} ;//you can add spheres as objects and I could expand it to other objects
@@ -123,13 +133,23 @@ int main(){
           //set pixel color
           //light source top middle
           viewRay = e + d * t;
-          Vector light = Vector(0, 1, 1);
+          Vector light = Vector(0, 1, 0);
           Vector normal = objs[i].sphere.normal(viewRay);
           Vector r = normal * (2 * dot(normal, light)) - light;
           // double lightDis = sqrt((light.x-sphere1.origin.x)*(light.x-sphere1.origin.x) + (light.y-sphere1.origin.y)*(light.y-sphere1.origin.y) + (light.z-sphere1.origin.z)*(light.z-sphere1.origin.z));
-          double lk = objs[i].kk *(intensity) * std::max(0.0, dot(normal.normalize(), light.normalize()));
-          double ls = objs[i].ks * (intensity) * pow(std::max(0.0, dot(normal.normalize(), r.normalize())), objs[i].pow);
-          double la = objs[i].ka * (intensity);
+          double la;
+          double lk;
+          double ls;
+          if(isShadow(objs,normal,light)){
+            la = objs[i].ka * (intensity);
+            lk =0;
+            ls =0;
+          }
+          else{
+            lk = objs[i].kk *(intensity) * std::max(0.0, dot(normal.normalize(), light.normalize()));
+            ls = objs[i].ks * (intensity) * pow(std::max(0.0, dot(normal.normalize(), r.normalize())), objs[i].pow);
+            la = objs[i].ka * (intensity);
+          }
           if (objs[i].color.x * la + 255 * ls + objs[i].color.x * lk > 255) {
             img(x, y, 0) = 255;
           } else {
