@@ -91,13 +91,27 @@ struct Object
     }
 };
 
-bool isShadow(Object objs[2],Vector n,Vector light){
-  double distance = std::numeric_limits<double>::infinity();
-  Vector l = Vector(light.x, -light.y, light.z);
-  for(int i = 0;i<sizeof(objs)/sizeof(objs[0]);i++){
-    if (objs[i].sphere.intersect(n, l, distance) && distance > 0) {
-      return true;
+bool isShadow(Object objs[],int size,Vector viewRay, Vector light,Vector normal, int currentObj){
+  Vector l = Vector(-light.x, -light.y, -light.z);
+  for(int i = 0;i<size;i++){
+    double distance = std::numeric_limits<double>::infinity();
+    bool test = objs[i].sphere.intersect(viewRay, l , distance);
+    //to make sure shadow is rendered on correct side of object
+    if(i == currentObj){
+      // if((normal.x*l.x > 0) || (normal.y*l.y > 0) || (normal.x*l.x > 0)){
+      //   break;
+      // }
     }
+    //check if it a sphere or a plane
+    //else if(objs[i].isSphere){
+      //remove the else when we add the above if statement about isSphere
+      else if (objs[i].sphere.intersect(viewRay, l, distance) && distance > 0) {
+        return true;
+      }
+    //}
+    //else if(objs.[i].isPlane){
+      //check for intersection and return true if intersected
+    //}
   }
   return false;
 }
@@ -105,11 +119,11 @@ bool isShadow(Object objs[2],Vector n,Vector light){
 int main(){
 
   double intensity = .5;
-  Sphere sphere1(Vector(150,150,50),50);
-  Sphere sphere2(Vector(150,50,50),25);
-  Vector blue(0,87,255);
-  Vector green(60,167,28);
-  Object objs[2] = {Object(sphere1,blue,.5,1.5,1,50),Object(sphere2,green,1,1.5,1,50)} ;//you can add spheres as objects and I could expand it to other objects
+  Sphere sphere1(Vector(175,180,150),50);
+  Sphere sphere2(Vector(75,200,50),30);
+  Vector blue(50,50,255);
+  Vector green(50,255,50);
+  Object objs[2] = {Object(sphere1,blue,.5,1.5,1,6),Object(sphere2,green,1,1.5,1,6)} ;//you can add spheres as objects and I could expand it to other objects
   //Compute u,v,w basis vectors
   //Creating blank 256x256 image
   CImg<unsigned char> img(256,256,1,3,0);
@@ -121,7 +135,7 @@ int main(){
         //---compute viewing ray---//
         //distance from eye to point on half-line set purposely to a very high number
         double t = std::numeric_limits<double>::infinity();
-        //position of eye
+        //direction vector of view
         Vector d = Vector(0, 0, 1);
         //position of pixel
         Vector e = Vector(x, y, 0);
@@ -129,18 +143,18 @@ int main(){
         //Vector d = s-e;
         //ray e+t*d
         Vector viewRay;
-        if (objs[i].sphere.intersect(e, d, t) && t > 0) {
+        if (objs[i].sphere.intersect(e, d, t) && t >= 0) {
           //set pixel color
           //light source top middle
           viewRay = e + d * t;
-          Vector light = Vector(0, 1, 0);
+          Vector light = Vector(1, 0, 1);
           Vector normal = objs[i].sphere.normal(viewRay);
           Vector r = normal * (2 * dot(normal, light)) - light;
           // double lightDis = sqrt((light.x-sphere1.origin.x)*(light.x-sphere1.origin.x) + (light.y-sphere1.origin.y)*(light.y-sphere1.origin.y) + (light.z-sphere1.origin.z)*(light.z-sphere1.origin.z));
           double la;
           double lk;
           double ls;
-          if(isShadow(objs,normal,light)){
+          if(isShadow(objs,sizeof(objs)/sizeof(objs[0]),viewRay,light,normal,i)){
             la = objs[i].ka * (intensity);
             lk =0;
             ls =0;
