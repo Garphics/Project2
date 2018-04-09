@@ -96,7 +96,7 @@ struct Object
 };
 
 
-Vector rayTrace(Vector e, Vector d, Object objs[], int size, int depth )
+Vector rayTrace(Vector e, Vector d, Object objs[], int size )
 {
   // Vector rgb;
   // Vector none = Vector(0,0,0);
@@ -111,7 +111,7 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int depth )
   {
    // double t = std::numeric_limits<double>::infinity();
    // double t1 = std::numeric_limits<double>::infinity();
-        if (objs[i].sphere.intersect(e, d, t,) && t >= 0) 
+        if (objs[i].sphere.intersect(e, d, t) && t >= 0) 
         {
            hitObj = objs[i];
 
