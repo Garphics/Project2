@@ -125,6 +125,7 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size )
   // Vector rgb;
   // Vector none = Vector(0,0,0);
   int step = 0;
+  int indexTemp;
   Object hitObj = Object(Sphere(Vector(0,0,0),0),Vector(0,0,0),0,0,0,0);
   double intensity = 0.5;
   double t = std::numeric_limits<double>::infinity();
@@ -138,7 +139,7 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size )
         if (objs[i].sphere.intersect(e, d, t) && t >= 0)
         {
            hitObj = objs[i];
-
+           indexTemp =i;
         }
 
    }
@@ -146,9 +147,19 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size )
         Vector light = Vector(1, 0, 1);
         Vector normal = hitObj.sphere.normal(viewRay);
         Vector r = normal * (2 * dot(normal, light)) - light;
-        double lk = hitObj.kk *(intensity) * std::max(0.0, dot(normal.normalize(), light.normalize()));
-        double ls = hitObj.ks * (intensity) * pow(std::max(0.0, dot(normal.normalize(), r.normalize())), hitObj.pow);
-        double la = hitObj.ka * (intensity);
+        double lk;
+        double ls;
+        double la;
+        if(isShadow(objs,size,viewRay,light,normal,indexTemp)){
+          la = objs[indexTemp].ka * (intensity);
+          lk =0;
+          ls =0;
+        }
+        else{
+          lk = hitObj.kk *(intensity) * std::max(0.0, dot(normal.normalize(), light.normalize()));
+          ls = hitObj.ks * (intensity) * pow(std::max(0.0, dot(normal.normalize(), r.normalize())), hitObj.pow);
+          la = hitObj.ka * (intensity);
+        }
         return Vector(
           (hitObj.color.x * la + 255 * ls + hitObj.color.x * lk),
           (hitObj.color.y * la + 255 * ls + hitObj.color.y * lk),
