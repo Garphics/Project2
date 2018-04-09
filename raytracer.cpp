@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <iostream>
 using namespace cimg_library;
-
+using namespace std;
 struct Vector {
   double x,y,z;
   Vector(){
@@ -52,7 +52,7 @@ struct Sphere{
   }
 
   //use quadratic formula to solve (d*d)t^2 + 2d*(e-origin)t + (e-c)*(e-c)-R^2 = 0
-  bool intersect(Vector e, Vector d, double &t){
+    bool intersect(Vector e, Vector d, double &t){
     double a = dot(d,d);
     double b = 2*dot(d,(e-origin));
     double c = dot((e-origin),(e-origin)) - radius*radius;
@@ -77,16 +77,20 @@ struct Object
 {
     Sphere sphere = Sphere(Vector(0,0,0),0);
     Vector color;
-    double kk,ks,ka;
+   // Vecotr emission_color;
+    double kk,ks,ka,flect,fract;
     int pow;
 
-    Object(const Sphere &s,const Vector &c,double k1, double k2,double k3,int p)
+    Object(const Sphere &s,const Vector &c, double k1, double k2,double k3, int p)
     {
       sphere = s;
       color = c;
+    //  emission_color = ec;
       kk = k1;
       ks = k2;
       ka = k3;
+     // fl = flect;
+    //  fr = fract;
       pow = p;
     }
 };
@@ -116,7 +120,45 @@ bool isShadow(Object objs[],int size,Vector viewRay, Vector light,Vector normal,
   return false;
 }
 
-int main(){
+Vector rayTrace(Vector e, Vector d, Object objs[], int size )
+{
+  // Vector rgb;
+  // Vector none = Vector(0,0,0);
+  int step = 0;
+  Object hitObj = Object(Sphere(Vector(0,0,0),0),Vector(0,0,0),0,0,0,0);
+  double intensity = 0.5;
+  double t = std::numeric_limits<double>::infinity();
+   Vector hitColor(0,0,0);
+ //  Vector rgb;
+  // Sphere hitObj = NULL;
+  for(int i = 0;i<size;i++)
+  {
+   // double t = std::numeric_limits<double>::infinity();
+   // double t1 = std::numeric_limits<double>::infinity();
+        if (objs[i].sphere.intersect(e, d, t) && t >= 0)
+        {
+           hitObj = objs[i];
+
+        }
+
+   }
+        Vector viewRay = e + d * t;
+        Vector light = Vector(1, 0, 1);
+        Vector normal = hitObj.sphere.normal(viewRay);
+        Vector r = normal * (2 * dot(normal, light)) - light;
+        double lk = hitObj.kk *(intensity) * std::max(0.0, dot(normal.normalize(), light.normalize()));
+        double ls = hitObj.ks * (intensity) * pow(std::max(0.0, dot(normal.normalize(), r.normalize())), hitObj.pow);
+        double la = hitObj.ka * (intensity);
+        return Vector(
+          (hitObj.color.x * la + 255 * ls + hitObj.color.x * lk),
+          (hitObj.color.y * la + 255 * ls + hitObj.color.y * lk),
+          (hitObj.color.z * la + 255 * ls + hitObj.color.z * lk));
+    // return rgb;
+
+  }
+
+int main()
+{
 
   double intensity = .5;
   Sphere sphere1(Vector(175,180,150),50);
@@ -127,62 +169,43 @@ int main(){
   //Compute u,v,w basis vectors
   //Creating blank 256x256 image
   CImg<unsigned char> img(256,256,1,3,0);
-
   //for each pixel
-  for (int y = 0; y<256; y++){
-    for(int x=0;x<256;x++){
-      for(int i = 0;i<sizeof(objs)/sizeof(objs[0]);i++) {
-        //---compute viewing ray---//
-        //distance from eye to point on half-line set purposely to a very high number
-        double t = std::numeric_limits<double>::infinity();
-        //direction vector of view
-        Vector d = Vector(0, 0, 1);
+
+
+  for (int y = 0; y<256; y++)
+  {
+    for(int x=0;x<256;x++)
+    {
+        Vector dir = Vector(0, 0, 1);
         //position of pixel
-        Vector e = Vector(x, y, 0);
-        //find first object hit by ray and its surface normal n
-        //Vector d = s-e;
-        //ray e+t*d
-        Vector viewRay;
-        if (objs[i].sphere.intersect(e, d, t) && t >= 0) {
-          //set pixel color
-          //light source top middle
-          viewRay = e + d * t;
-          Vector light = Vector(1, 0, 1);
-          Vector normal = objs[i].sphere.normal(viewRay);
-          Vector r = normal * (2 * dot(normal, light)) - light;
-          // double lightDis = sqrt((light.x-sphere1.origin.x)*(light.x-sphere1.origin.x) + (light.y-sphere1.origin.y)*(light.y-sphere1.origin.y) + (light.z-sphere1.origin.z)*(light.z-sphere1.origin.z));
-          double la;
-          double lk;
-          double ls;
-          if(isShadow(objs,sizeof(objs)/sizeof(objs[0]),viewRay,light,normal,i)){
-            la = objs[i].ka * (intensity);
-            lk =0;
-            ls =0;
-          }
-          else{
-            lk = objs[i].kk *(intensity) * std::max(0.0, dot(normal.normalize(), light.normalize()));
-            ls = objs[i].ks * (intensity) * pow(std::max(0.0, dot(normal.normalize(), r.normalize())), objs[i].pow);
-            la = objs[i].ka * (intensity);
-          }
-          if (objs[i].color.x * la + 255 * ls + objs[i].color.x * lk > 255) {
+        Vector o = Vector(x, y, 0);
+        Vector mycolor = rayTrace(o,dir,objs, sizeof(objs)/sizeof(objs[0]));
+      //  std::cout << mycolor << std::endl;
+        if (mycolor.x > 255)
+          {
             img(x, y, 0) = 255;
-          } else {
-            img(x, y, 0) = objs[i].color.x * la + 255 * ls + objs[i].color.x * lk;
+          } else
+          {
           }
-          if (objs[i].color.y * la + 255 * ls + objs[i].color.y * lk > 255) {
+
+          if (mycolor.y > 255)
+          {
             img(x, y, 1) = 255;
-          } else {
-            img(x, y, 1) = objs[i].color.y * la + 255 * ls + objs[i].color.y * lk;
+          } else
+          {
+            img(x, y, 1) = mycolor.y;
           }
-          if (objs[i].color.z * la + 255 * ls + objs[i].color.z * lk > 255) {
+
+          if (mycolor.z > 255)
+          {
             img(x, y, 2) = 255;
-          } else {
-            img(x, y, 2) = objs[i].color.z * la + 255 * ls + objs[i].color.z * lk;
+          } else
+          {
+            img(x, y, 2) = mycolor.z;
           }
-        }
-      }
-    }
+
   }
-  img.display();
+}
+img.display();
   return 0;
 }
