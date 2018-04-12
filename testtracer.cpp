@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <iostream>
 using namespace cimg_library;
-
+using namespace std;
 struct Vector {
   double x,y,z;
   Vector(){
@@ -52,7 +52,7 @@ struct Sphere{
   }
 
   //use quadratic formula to solve (d*d)t^2 + 2d*(e-origin)t + (e-c)*(e-c)-R^2 = 0
-  bool intersect(Vector e, Vector d, double &t1, double &t2){
+    bool intersect(Vector e, Vector d, double &t){
     double a = dot(d,d);
     double b = 2*dot(d,(e-origin));
     double c = dot((e-origin),(e-origin)) - radius*radius;
@@ -64,7 +64,7 @@ struct Sphere{
       double num = sqrt(discriminant);
       double t1 = ((-b)+num)/(2*a);
       double t2 = ((-b)-num)/(2*a);
-      t = (t1 < t2) ? t1 :t2;
+      t=(t1 < t2) ? t1 :t2;
       return true;
     }
   }
@@ -77,155 +77,148 @@ struct Object
 {
     Sphere sphere = Sphere(Vector(0,0,0),0);
     Vector color;
-    float ref_factor;
-    float trans_factor;
-    double kk,ks,ka;
+   // Vecotr emission_color;
+    double kk,ks,ka,flect,fract;
     int pow;
 
-    Object(const Sphere &s,const Vector &c,double k1, double k2,double k3,int p)
+    Object(const Sphere &s,const Vector &c, double k1, double k2,double k3, double fl, double fr, int p)
     {
       sphere = s;
       color = c;
+    //  emission_color = ec;
       kk = k1;
       ks = k2;
       ka = k3;
+      fl = flect;
+      fr = fract;
       pow = p;
     }
 };
-/*
-Vector/color Tracer (Vecotor ray, depth){
-	max depth = INFINITE;
-	if(depth > maxdepth){
-		return background color;
-	}
-	q = isIntersect
-	if(q = null){
-		return backgorund color;
-	}
-}
 
- 
-*/
-Vector Raytrace(Vector origin, Vector dir, objs, depth)
+
+Vector rayTrace(Vector e, Vector d, Object objs[], int size, int maxDepth)
 {
-  Vector background(0,0,0);
-  if(depth < max)
+  // Vector rgb;
+  // Vector none = Vector(0,0,0);
+  int step = 0;
+  Object hitObj = Object(Sphere(Vector(0,0,0),0),Vector(0,0,0),0,0,0,0,0,0);
+  double intensity = 0.5;
+  double t = std::numeric_limits<double>::infinity();
+   Vector hitColor(0,0,0);
+ //  Vector rgb; 
+  // Sphere hitObj = NULL;
+  for(int i = 0;i<size;i++) 
   {
-    return background;
-  }
-  float tn = 10000000; //distance to nearest object
-  Object *hitObj = NULL; //pointer to the interscted object
-  Vector hitColor = (0,0,0); // color of intersected point
+   // double t = std::numeric_limits<double>::infinity();
+   // double t1 = std::numeric_limits<double>::infinity();
+        if (objs[i].sphere.intersect(e, d, t) && t >= 0) 
+        {
+           hitObj = objs[i];
 
-  //find interest of this ray with the sphere in the scene
-  for(int i = 0; i < objs.size(); i++) 
-  {
-    float t0 = INFINITY, ti = INFINITY;
-    if(objs[i].intersects(origin,dir,t0,t1)) 
-    {
-      if(t0 < 0){t0 = t1;}
-      if(t0 < tnear){ 
-        tnear = 0;
-        hitObj = &objs[i];}
-    }
-
-  }
-  //if there is no interestion with an object
-  if (!hitObj) {return background color;};
-  Vector surfaceColor = 0,0,0; //color of the ray/surface of the object intersected by the ray
-  Vector hitPoint = origin + dir * tnear;
-  Vector hitNorm =  objs[i].sphere.normal(hitPoint);
-  bool inside = false;  
-
-  //normalize hitnorm
-  // If the normal and the view direction are not opposite to each other
-    // reverse the normal direction. That also means we are inside the sphere so set
-    // the inside bool to true. Finally reverse the sign of IdotN which we want
-    // positive.
-  if(dir.dot(nhit) > 0) 
-   {
-      hitPoint = -hitNorm; inside = true;
-   }
-  if(obj.reflective || obj.transparent) 
-  {
-    float facing = -raydir.dot(hipPoint);
-    float frensel =  1 * 0.1 + pow(1-facing,3) * (1 - 0.1);
-
-
-     // compute reflection direction
-    Vector reflectdir = raydir - hitPoint * 2 * raydir.dot(hitPoint);
-    reflectdir.normalize();
-    Vector refelctRay = trace(hitPoint + hitNorm, reflectdir,objs,depth+1);
-    Vecotr refractRay = 0,0,0;
-
-    // if the sphere is also transparent compute refraction ray (transmission)
-    if(obj.transparent)
-    {
-      float  ior = 1.1;
-      float eta = (inside) ? ior : 1 / ior; //are we inside or outside the surface?
-      float cosi = -hitPoint.dot(raydir);
-      float k = 1 - (eta*eta) * (1-cosi*cosi);
-      Vecotr refractdir = rayfir * eta + hitPoint * (era * cosi - sqrt(k));
-      refractdir.normalize();
-      refractRay = trace(hitPoint hitNorm, refractdir,spheres, depth + 1);
-    }
-      // the result is a mix of reflection and refraction (if the sphere is transparent)
-     surfaceColor = (refeltRay * fresnel +refractRay * (1-frensel) * obj.transparency * obj.surfaceColor);
-  }
-
-  else {
-    for(int i = 0; i < objs.size; i++){
-      if(objs[i].emissionColor.x > 0){
-        Vector transmit = 1;
-        Vector lightDir = obj[i].center - hitPoint;
-        lightDirc.normalize();
-        for(int j = 0; j< objs.size(); ++j){
-          if(i != j){
-            float t0, t1;
-            if(objs[j].intersect(hitPoint+hitNorm, lightDir,t0,t1)){
-              transmit = 0;
-              break;
-            }
-          }
         }
-        surfaceColor += obj.sphere.surfaceColor * transmit * max(0,hitPoint.dot(lightDir))*objs[i].emissionColor;
-      }
-    }
+            
+   }
+        Vector surfC = Vector(0,0,0);
+        Vector viewRay = e + d * t;
+        Vector light = Vector(1, 0, 1);
+        Vector normal = hitObj.sphere.normal(viewRay);
+        Vector normHit = normal.normalize();
+        double bias = 1e-4;
+        bool insideObj = false;
+        if (dot(d,normHit) > 0)
+        { 
+          normHit =  Vector(0,0,0) - normHit;
+          insideObj = true;
+        }
+
+        if((hitObj.flect > 0 || hitObj.fract > 0) && step < maxDepth)
+        {
+          double face = -dot(d,normHit);
+          double fresnel = 1 * 0.1 + pow(1-face,3) * (1 - 0.1);
+          Vector flectDir = d - normHit * 2 * dot(d,normHit);
+          Vector nFlectDir = flectDir.normalize();
+          Vector reflection = rayTrace(viewRay + normHit * bias, flectDir, objs,size, step + 1 );
+          Vector refraction = Vector(0,0,0);
+          if(hitObj.fract > 0 )
+          {
+            double instanceR = 1.1, eta = (insideObj) ? instanceR : 1/instanceR;
+            double cos = -dot(normHit,d);
+            double k = 1 - eta * eta * (1-cos * cos);
+            Vector fractD = d * eta + normHit * (eta * cos -sqrt(k));
+            Vector nFractDir = fractD.normalize();
+            refraction = rayTrace(viewRay - normHit * bias,nFractDir, objs,size,step+1);
+          }
+          surfC = (reflection * fresnel);
+
+        }
+
+
+       
+        Vector r = normal * (2 * dot(normal, light)) - light;  
+        double lk = hitObj.kk *(intensity) * std::max(0.0, dot(normHit, light.normalize()));
+        double ls = hitObj.ks * (intensity) * pow(std::max(0.0, dot(normHit, r.normalize())), hitObj.pow);
+        double la = hitObj.ka * (intensity);        
+        Vector  rgb = Vector ((hitObj.color.x * la + 255 * ls + hitObj.color.x * lk),(hitObj.color.y * la + 255 * ls + hitObj.color.y * lk),(hitObj.color.z * la + 255 * ls + hitObj.color.z * lk)); 
+        
+      // return rgb;
+        return rgb + surfC ;
+     
   }
- return surfaceColor + obj.sphere.emissionColor
-}
 int main()
 {
 
   double intensity = .5;
-  Sphere sphere1(Vector(150,150,50),50);
-  Sphere sphere2(Vector(35,175,50),25);
-  Vector blue(0,87,255);
-  Vector green(60,167,28);
-  Object objs[2] = {Object(sphere1,blue,.5,1.5,1,50),Object(sphere2,green,1,1.5,1,50)} ;//you can add spheres as objects and I could expand it to other objects
+  //  Sphere sphere1(Vector(100,250,200),100);
+  //  Sphere sphere2(Vector(300,250,200),50);
+  Sphere sphere1(Vector(175,180,150),50);
+  Sphere sphere2(Vector(75,200,150),30);
+  Vector blue(50,50,255);
+  Vector green(50,255,50);
+  Object objs[2] = {Object(sphere1,blue,.5,1.5,1,50,0,6),Object(sphere2,green,1,1.5,1,50,0,6)} ;//you can add spheres as objects and I could expand it to other objects
+  
   //Compute u,v,w basis vectors
   //Creating blank 256x256 image
   CImg<unsigned char> img(256,256,1,3,0);
-  double intensity = .5;
-  Sphere sphere1(Vector(150,150,50),50);
-  Sphere sphere2(Vector(35,175,50),25);
-  Vector blue(0,87,255);
-  Vector green(60,167,28);
-  Object objs[2] = {Object(sphere1,blue,.5,1.5,1,50),Object(sphere2,green,1,1.5,1,50)} ;
   //for each pixel
 
-
-
+//std::cout << "Hello" << std::endl;
   for (int y = 0; y<256; y++)
   {
+     // std::cout << "mycolor" << std::endl;
     for(int x=0;x<256;x++)
     {
-        Vector o = Vector(0, 0, 1);
+        Vector dir = Vector(0, 0, 1);
         //position of pixel
-        Vector dir = Vector(x, y, 0);
-        Vector color = Raytrace(o,dir,objs,0)
+        Vector o = Vector(x, y, 0);
+        Vector mycolor = rayTrace(o,dir,objs, sizeof(objs)/sizeof(objs[0]),20);
+      
+        if (mycolor.x > 255) 
+          {
+            img(x, y, 0) = 255;
+          } else 
+          {
+            img(x,y,0) = mycolor.x;
+          }
+
+          if (mycolor.y > 255) 
+          {
+            img(x, y, 1) = 255;
+          } else 
+          {
+            img(x, y, 1) = mycolor.y;
+          }
+
+          if (mycolor.z > 255) 
+          {
+            img(x, y, 2) = 255;
+          } else 
+          {
+            img(x, y, 2) = mycolor.z;
+          }
     
-  }
-  img.display();
+  } 
+}
+img.display();
   return 0;
 }
+
