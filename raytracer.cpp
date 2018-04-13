@@ -114,11 +114,12 @@ struct Object
    // Vecotr emission_color;
     double kk,ks,ka,flect,fract;
     int pow;
-
-    Object(const Sphere &s,const Vector &c, double k1, double k2,double k3, int p)
+    int refr;
+    Object(const Sphere &s,const Vector &c, double k1, double k2,double k3, int p, int r)
     {
       sphere = s;
       color = c;
+      refr = r;
     //  emission_color = ec;
       kk = k1;
       ks = k2;
@@ -160,7 +161,7 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
   // Vector none = Vector(0,0,0);
   Vector returnColor(0,0,0);
   int indexTemp;
-  Object hitObj = Object(Sphere(Vector(0,0,0),0),Vector(0,0,0),0,0,0,0);
+  Object hitObj = Object(Sphere(Vector(0,0,0),0),Vector(0,0,0),0,0,0,0,0);
   double intensity = 1.5;
   double t = std::numeric_limits<double>::infinity();
    Vector hitColor(0,0,0);
@@ -226,6 +227,12 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
            double lk;
            double ls;
            double la;
+           double nconst = 1.5;
+           double c1 = dot(normal.normalize(),viewRay);
+           double c2 = sqrt(1-nconst*nconst*(1-c1*c1));
+           Vector T = viewRay * nconst + normal.normalize()*(nconst*c1 - c2);
+           Vector refractColor =  Vector(0,0,0);
+           //Vector refractColor = rayTrace(viewRay, T, objs,size,y,100);
            if(isShadow(objs,size,viewRay,slight,normal,indexTemp)){
              la = objs[indexTemp].ka * (intensity);
              lk =0;
@@ -242,12 +249,18 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
                 (hitObj.color.x * la + 255 * ls + hitObj.color.x * lk) + reflColor.x,
                 (hitObj.color.y * la + 255 * ls + hitObj.color.y * lk) + reflColor.y,
                 (hitObj.color.z * la + 255 * ls + hitObj.color.z * lk) + reflColor.z);
+                if(hitObj.refr = 1){
+                  returnColor = Vector(returnColor.x + refractColor.x, returnColor.y + refractColor.y, returnColor.z + refractColor.z );
+                }
            }
            else{
              returnColor = Vector(
                (hitObj.color.x * la + 255 * ls + hitObj.color.x * lk),
                (hitObj.color.y * la + 255 * ls + hitObj.color.y * lk),
                (hitObj.color.z * la + 255 * ls + hitObj.color.z * lk));
+               if(hitObj.refr = 1){
+                 returnColor = Vector(returnColor.x + refractColor.x, returnColor.y + refractColor.y, returnColor.z + refractColor.z );
+               }
                // return rgb;
            }
           }
@@ -265,7 +278,7 @@ int main()
   Vector blue(15,15,75);
   Vector green(15,75,15);
 
-  Object objs[2] = {Object(sphere1,blue,1.5,1.5,.5,25),Object(sphere2,green,1.5,1.5,.5,25)} ;//you can add spheres as objects and I could expand it to other objects
+  Object objs[2] = {Object(sphere1,blue,1.5,1.5,.5,25,0),Object(sphere2,green,1.5,1.5,.5,25,1)} ;//you can add spheres as objects and I could expand it to other objects
   //Compute u,v,w basis vectors
   //Creating blank 256x256 image
   CImg<unsigned char> img(256,256,1,3,0);
