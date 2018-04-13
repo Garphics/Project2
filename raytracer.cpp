@@ -84,7 +84,7 @@ struct plane
     plane(Vector po, Vector n,Vector c, double k1, double k2, double k3, int p)
     {
         point = po;
-        normal = n;
+        normal = Vector(n.x,n.y,-n.z);
         color = c;
         kk = k1;
         ks = k2;
@@ -162,27 +162,29 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y )
   int step = 0;
   int indexTemp;
   Object hitObj = Object(Sphere(Vector(0,0,0),0),Vector(0,0,0),0,0,0,0);
-  double intensity = 0.5;
+  double intensity = 1.5;
   double t = std::numeric_limits<double>::infinity();
    Vector hitColor(0,0,0);
  //  Vector rgb;
   // Sphere hitObj = NULL;
 
-  Vector red(255,80,80);
+  Vector red(200,30,30);
 
-  plane p(Vector(250,250,300),Vector(0,-2,1),red,.5,1.5,1,50);
+  plane p(Vector(250,250,300),Vector(0,-2,-1),red,.5,1.5,1,50);
+
+  Vector light = Vector(2, 1, 2);
 
   if (p.intersect(e, d, t) && t > 0) {
 
       //set pixel color
       //light source top middle
       Vector viewRay = e + d * t;
-      Vector light = Vector(0, 1, 0);
+      Vector plight = Vector(light.x, light.y, -light.z);
       Vector normal = p.normal;
       indexTemp = -1;
       double la;
-      Vector r = normal * (2 * dot(normal, light)) - light;
-      if(isShadow(objs,size,viewRay,light,normal,indexTemp)){
+      Vector r = normal * (2 * dot(normal, plight)) - plight;
+      if(isShadow(objs,size,viewRay,plight,normal,indexTemp)){
         la = .5*p.ka * (intensity);
         la = (la * y/192);
         //lk =0;
@@ -218,19 +220,19 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y )
            hitObj = objs[i];
            indexTemp =i;
            Vector viewRay = e + d * t;
-           Vector light = Vector(0, 1, 0);
+           Vector slight = Vector(light.x, light.y, light.z);
            Vector normal = hitObj.sphere.normal(viewRay);
-           Vector r = normal * (2 * dot(normal, light)) - light;
+           Vector r = normal * (2 * dot(normal, slight)) - slight;
            double lk;
            double ls;
            double la;
-           if(isShadow(objs,size,viewRay,light,normal,indexTemp)){
+           if(isShadow(objs,size,viewRay,slight,normal,indexTemp)){
              la = objs[indexTemp].ka * (intensity);
              lk =0;
              ls =0;
            }
            else{
-             lk = hitObj.kk *(intensity) * std::max(0.0, dot(normal.normalize(), light.normalize()));
+             lk = hitObj.kk *(intensity) * std::max(0.0, dot(normal.normalize(), slight.normalize()));
              ls = hitObj.ks * (intensity) * pow(std::max(0.0, dot(normal.normalize(), r.normalize())), hitObj.pow);
              la = hitObj.ka * (intensity);
            }
@@ -248,13 +250,13 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y )
 int main()
 {
 
-  double intensity = .5;
-  Sphere sphere1(Vector(165,100,150),50);
-  Sphere sphere2(Vector(65,120,150),30);
-  Vector blue(50,50,255);
-  Vector green(50,255,50);
+  double intensity = 1.5;
+  Sphere sphere1(Vector(165,130,150),50);
+  Sphere sphere2(Vector(85,150,150),30);
+  Vector blue(15,15,75);
+  Vector green(15,75,15);
 
-  Object objs[2] = {Object(sphere1,blue,.5,1.5,1,6),Object(sphere2,green,1,1.5,1,6)} ;//you can add spheres as objects and I could expand it to other objects
+  Object objs[2] = {Object(sphere1,blue,1.5,1.5,.5,25),Object(sphere2,green,1.5,1.5,.5,25)} ;//you can add spheres as objects and I could expand it to other objects
   //Compute u,v,w basis vectors
   //Creating blank 256x256 image
   CImg<unsigned char> img(256,256,1,3,0);
