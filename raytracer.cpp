@@ -154,12 +154,11 @@ bool isShadow(Object objs[],int size,Vector viewRay, Vector light,Vector normal,
   return false;
 }
 
-Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y )
+Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
 {
   // Vector rgb;
   // Vector none = Vector(0,0,0);
   Vector returnColor(0,0,0);
-  int step = 0;
   int indexTemp;
   Object hitObj = Object(Sphere(Vector(0,0,0),0),Vector(0,0,0),0,0,0,0);
   double intensity = 1.5;
@@ -223,6 +222,7 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y )
            Vector slight = Vector(light.x, light.y, light.z);
            Vector normal = hitObj.sphere.normal(viewRay);
            Vector r = normal * (2 * dot(normal, slight)) - slight;
+           Vector reflColor;
            double lk;
            double ls;
            double la;
@@ -236,12 +236,21 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y )
              ls = hitObj.ks * (intensity) * pow(std::max(0.0, dot(normal.normalize(), r.normalize())), hitObj.pow);
              la = hitObj.ka * (intensity);
            }
-           returnColor = Vector(
-             (hitObj.color.x * la + 255 * ls + hitObj.color.x * lk),
-             (hitObj.color.y * la + 255 * ls + hitObj.color.y * lk),
-             (hitObj.color.z * la + 255 * ls + hitObj.color.z * lk));
-             // return rgb;
+           if(step < 1){
+              reflColor = rayTrace(viewRay, d - normal.normalize() * 2 * dot(d,normal.normalize()),objs,size,y,step+1);
+              returnColor = Vector(
+                (hitObj.color.x * la + 255 * ls + hitObj.color.x * lk) + reflColor.x,
+                (hitObj.color.y * la + 255 * ls + hitObj.color.y * lk) + reflColor.y,
+                (hitObj.color.z * la + 255 * ls + hitObj.color.z * lk) + reflColor.z);
            }
+           else{
+             returnColor = Vector(
+               (hitObj.color.x * la + 255 * ls + hitObj.color.x * lk),
+               (hitObj.color.y * la + 255 * ls + hitObj.color.y * lk),
+               (hitObj.color.z * la + 255 * ls + hitObj.color.z * lk));
+               // return rgb;
+           }
+          }
    }
 
    return returnColor;
@@ -268,7 +277,7 @@ int main()
         Vector dir = Vector(0, 0, 1);
         //position of pixel
         Vector o = Vector(x, y, 0);
-        Vector mycolor = rayTrace(o,dir,objs, sizeof(objs)/sizeof(objs[0]),y);
+        Vector mycolor = rayTrace(o,dir,objs, sizeof(objs)/sizeof(objs[0]),y,0);
       //  std::cout << mycolor << std::endl;
         if (mycolor.x > 255)
           {
