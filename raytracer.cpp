@@ -84,7 +84,7 @@ struct plane
     plane(Vector po, Vector n,Vector c, double k1, double k2, double k3, int p)
     {
         point = po;
-        normal = Vector(n.x,n.y,-n.z);
+        normal = Vector(n.x,n.y,n.z);
         color = c;
         kk = k1;
         ks = k2;
@@ -96,11 +96,10 @@ struct plane
     bool intersect(Vector RayOri,  Vector RayDir, double &t)
     {
         double ln = dot(normal,RayDir);
-        if(ln > 1e-6)
+        if(abs(ln) > 1e-6)
         {
-
             Vector PROri = point - RayOri;
-            t = dot(PROri,normal);
+            t = dot(PROri,normal)/ln;
             return(t >= 0);
         }
         return false;
@@ -115,7 +114,7 @@ struct Object
     double kk,ks,ka,flect,fract;
     int pow;
     int refr;
-    Object(const Sphere &s,const Vector &c, double k1, double k2,double k3, int p, int r)
+    Object(const Sphere &s,const Vector &c, double k1, double k2,double k3, int p, int r, double fl)
     {
       sphere = s;
       color = c;
@@ -124,7 +123,7 @@ struct Object
       kk = k1;
       ks = k2;
       ka = k3;
-     // fl = flect;
+      flect = fl;
     //  fr = fract;
       pow = p;
     }
@@ -161,53 +160,56 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
   // Vector none = Vector(0,0,0);
   Vector returnColor(0,0,0);
   int indexTemp;
-  Object hitObj = Object(Sphere(Vector(0,0,0),0),Vector(0,0,0),0,0,0,0,0);
+  Object hitObj = Object(Sphere(Vector(0,0,0),0),Vector(0,0,0),0,0,0,0,0,0);
   double intensity = 1.5;
   double t = std::numeric_limits<double>::infinity();
+  double minT = t;
    Vector hitColor(0,0,0);
  //  Vector rgb;
   // Sphere hitObj = NULL;
 
   Vector red(200,30,30);
 
-  plane p(Vector(250,250,300),Vector(0,-2,-1),red,.5,1.5,1,50);
+  plane p(Vector(0,100,300),Vector(0,-2,-1),red,.5,1.5,1,50);
 
   Vector light = Vector(2, 1, 2);
 
   if (p.intersect(e, d, t) && t > 0) {
-
-      //set pixel color
-      //light source top middle
-      Vector viewRay = e + d * t;
-      Vector plight = Vector(light.x, light.y, -light.z);
-      Vector normal = p.normal;
-      indexTemp = -1;
-      double la;
-      Vector r = normal * (2 * dot(normal, plight)) - plight;
-      if(isShadow(objs,size,viewRay,plight,normal,indexTemp)){
-        la = .5*p.ka * (intensity);
-        la = (la * y/192);
-        //lk =0;
-        //ls =0;
-      }
-      else {
-        la = p.ka * (intensity);
-        la = (la * y/192);
-      }
-      if (p.color.x * la > 255) {
-        returnColor.x = 255;
-      } else {
-        returnColor.x = p.color.x * la;
-      }
-      if (p.color.y * la > 255) {
-        returnColor.y = 255;
-      } else {
-        returnColor.y = p.color.y * la;
-      }
-      if (p.color.z * la > 255) {
-        returnColor.z = 255;
-      } else {
-        returnColor.z = p.color.z * la;
+      if (t < minT){
+        minT = t;
+        //set pixel color
+        //light source top middle
+        Vector viewRay = e + d * t;
+        Vector plight = Vector(light.x, light.y, light.z);
+        Vector normal = p.normal;
+        indexTemp = -1;
+        double la;
+        Vector r = normal * (2 * dot(normal, plight)) - plight;
+        if(isShadow(objs,size,viewRay,plight,normal,indexTemp)){
+          la = .5*p.ka * (intensity);
+          la = (la * y/192);
+          //lk =0;
+          //ls =0;
+        }
+        else {
+          la = p.ka * (intensity);
+          la = (la * y/192);
+        }
+        if (p.color.x * la > 255) {
+          returnColor.x = 255;
+        } else {
+          returnColor.x = p.color.x * la;
+        }
+        if (p.color.y * la > 255) {
+          returnColor.y = 255;
+        } else {
+          returnColor.y = p.color.y * la;
+        }
+        if (p.color.z * la > 255) {
+          returnColor.z = 255;
+        } else {
+          returnColor.z = p.color.z * la;
+        }
       }
   }
 
@@ -217,53 +219,56 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
    // double t1 = std::numeric_limits<double>::infinity();
         if (objs[i].sphere.intersect(e, d, t) && t >= 0)
         {
-           hitObj = objs[i];
-           indexTemp =i;
-           Vector viewRay = e + d * t;
-           Vector slight = Vector(light.x, light.y, light.z);
-           Vector normal = hitObj.sphere.normal(viewRay);
-           Vector r = normal * (2 * dot(normal, slight)) - slight;
-           Vector reflColor;
-           double lk;
-           double ls;
-           double la;
-           double nconst = 1.5;
-           double c1 = dot(normal.normalize(),viewRay);
-           double c2 = sqrt(1-nconst*nconst*(1-c1*c1));
-           Vector T = viewRay * nconst + normal.normalize()*(nconst*c1 - c2);
-           Vector refractColor =  Vector(0,0,0);
-           //Vector refractColor = rayTrace(viewRay, T, objs,size,y,100);
-           if(isShadow(objs,size,viewRay,slight,normal,indexTemp)){
-             la = objs[indexTemp].ka * (intensity);
-             lk =0;
-             ls =0;
-           }
-           else{
-             lk = hitObj.kk *(intensity) * std::max(0.0, dot(normal.normalize(), slight.normalize()));
-             ls = hitObj.ks * (intensity) * pow(std::max(0.0, dot(normal.normalize(), r.normalize())), hitObj.pow);
-             la = hitObj.ka * (intensity);
-           }
-           if(step < 1){
+          if (t < minT){
+            minT = t;
+            hitObj = objs[i];
+            indexTemp =i;
+            Vector viewRay = e + d * t;
+            Vector slight = Vector(light.x, light.y, light.z);
+            Vector normal = hitObj.sphere.normal(viewRay);
+            Vector r = normal * (2 * dot(normal, slight)) - slight;
+            Vector reflColor;
+            double lk;
+            double ls;
+            double la;
+            double nconst = 1.5;
+            double c1 = dot(normal.normalize(),viewRay);
+            double c2 = sqrt(1-nconst*nconst*(1-c1*c1));
+            Vector T = viewRay * nconst + normal.normalize()*(nconst*c1 - c2);
+            Vector refractColor =  Vector(0,0,0);
+            //Vector refractColor = rayTrace(viewRay, T, objs,size,y,100);
+            if(isShadow(objs,size,viewRay,slight,normal,indexTemp)){
+              la = objs[indexTemp].ka * (intensity);
+              lk =0;
+              ls =0;
+            }
+            else{
+              lk = hitObj.kk *(intensity) * std::max(0.0, dot(normal.normalize(), slight.normalize()));
+              ls = hitObj.ks * (intensity) * pow(std::max(0.0, dot(normal.normalize(), r.normalize())), hitObj.pow);
+              la = hitObj.ka * (intensity);
+            }
+            if(step < 5){
               reflColor = rayTrace(viewRay, d - normal.normalize() * 2 * dot(d,normal.normalize()),objs,size,y,step+1);
               returnColor = Vector(
-                (hitObj.color.x * la + 255 * ls + hitObj.color.x * lk) + reflColor.x,
-                (hitObj.color.y * la + 255 * ls + hitObj.color.y * lk) + reflColor.y,
-                (hitObj.color.z * la + 255 * ls + hitObj.color.z * lk) + reflColor.z);
-                if(hitObj.refr = 1){
-                  returnColor = Vector(returnColor.x + refractColor.x, returnColor.y + refractColor.y, returnColor.z + refractColor.z );
-                }
-           }
-           else{
-             returnColor = Vector(
-               (hitObj.color.x * la + 255 * ls + hitObj.color.x * lk),
-               (hitObj.color.y * la + 255 * ls + hitObj.color.y * lk),
-               (hitObj.color.z * la + 255 * ls + hitObj.color.z * lk));
-               if(hitObj.refr = 1){
-                 returnColor = Vector(returnColor.x + refractColor.x, returnColor.y + refractColor.y, returnColor.z + refractColor.z );
-               }
-               // return rgb;
-           }
+                (hitObj.color.x * la + 255 * ls + hitObj.color.x * lk) + hitObj.flect*reflColor.x,
+                (hitObj.color.y * la + 255 * ls + hitObj.color.y * lk) + hitObj.flect*reflColor.y,
+                (hitObj.color.z * la + 255 * ls + hitObj.color.z * lk) + hitObj.flect*reflColor.z);
+              if(hitObj.refr = 1){
+                returnColor = Vector(returnColor.x + refractColor.x, returnColor.y + refractColor.y, returnColor.z + refractColor.z );
+              }
+            }
+            else{
+              returnColor = Vector(
+                (hitObj.color.x * la + 255 * ls + hitObj.color.x * lk),
+                (hitObj.color.y * la + 255 * ls + hitObj.color.y * lk),
+                (hitObj.color.z * la + 255 * ls + hitObj.color.z * lk));
+              if(hitObj.refr = 1){
+                returnColor = Vector(returnColor.x + refractColor.x, returnColor.y + refractColor.y, returnColor.z + refractColor.z );
+              }
+                // return rgb;
+            }
           }
+        }
    }
 
    return returnColor;
@@ -273,12 +278,12 @@ int main()
 {
 
   double intensity = 1.5;
-  Sphere sphere1(Vector(165,130,150),50);
-  Sphere sphere2(Vector(85,150,150),30);
+  Sphere sphere1(Vector(165,130,140),50);
+  Sphere sphere2(Vector(85,170,100),30);
   Vector blue(15,15,75);
   Vector green(15,75,15);
 
-  Object objs[2] = {Object(sphere1,blue,1.5,1.5,.5,25,0),Object(sphere2,green,1.5,1.5,.5,25,1)} ;//you can add spheres as objects and I could expand it to other objects
+  Object objs[2] = {Object(sphere1,blue,1.5,1.5,.5,50,0,.3),Object(sphere2,green,1.5,1.5,.5,50,1,.3)} ;//you can add spheres as objects and I could expand it to other objects
   //Compute u,v,w basis vectors
   //Creating blank 256x256 image
   CImg<unsigned char> img(256,256,1,3,0);
