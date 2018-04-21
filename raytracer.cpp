@@ -3,6 +3,9 @@
 #include <limits>
 #include <algorithm>
 #include <iostream>
+
+const double PI = 3.141592653589793;
+
 using namespace cimg_library;
 using namespace std;
 struct Vector {
@@ -170,9 +173,9 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
 
   Vector red(200,30,30);
 
-  plane p(Vector(0,100,300),Vector(0,-2,-1),red,.5,1.5,1,50);
+  plane p(Vector(0,0,-17),Vector(0,2,1),red,.5,1.5,1,50);
 
-  Vector light = Vector(2, 1, 2);
+  Vector light = Vector(2, -1, -2);
 
   if (p.intersect(e, d, t) && t > 0) {
       if (t < minT){
@@ -277,24 +280,51 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
 int main()
 {
 
+  int imageWidth = 256;
+  int imageHeight = 256;
   double intensity = 1.5;
-  Sphere sphere1(Vector(165,130,140),50);
-  Sphere sphere2(Vector(85,170,100),30);
+  Sphere sphere1(Vector(0,0,-8),1);
+  Sphere sphere2(Vector(-3,0,-8),1);
   Vector blue(15,15,75);
   Vector green(15,75,15);
 
   Object objs[2] = {Object(sphere1,blue,1.5,1.5,.5,50,0,.3),Object(sphere2,green,1.5,1.5,.5,50,1,.3)} ;//you can add spheres as objects and I could expand it to other objects
   //Compute u,v,w basis vectors
   //Creating blank 256x256 image
-  CImg<unsigned char> img(256,256,1,3,0);
+  CImg<unsigned char> img(imageWidth,imageHeight,1,3,0);
   //for each pixel
   for (int y = 0; y<256; y++)
   {
     for(int x=0;x<256;x++)
     {
-        Vector dir = Vector(0, 0, 1);
-        //position of pixel
-        Vector o = Vector(x, y, 0);
+        //pixelNDC is the normalized pixel position
+        //NDC is Normalized Device Coordinates
+        //shifted 0.5 pixels because we want to be in the middle of the pixels
+        //range of 0-1
+        double PixelNDCx= (x + 0.5)/imageWidth;
+        double PixelNDCy=( y + 0.5)/imageHeight;
+
+        //maps the coordinates so that the center of the screen is origin
+        double PixelScreenx = 2*PixelNDCx -1;
+        double PixelScreeny = 1-2*PixelNDCy;
+
+        //adjusting based on aspect ratio and also field of view angle
+        double FOVangle = 45;
+        FOVangle = (FOVangle*PI)/180;
+        float ImageAspectRatio = imageWidth/(float)imageHeight;
+
+        //We are now in Camera Space :)
+        double PixelCamerax = (PixelScreenx)*ImageAspectRatio*tan(FOVangle/2);
+        double PixelCameray = (PixelScreeny)*tan(FOVangle/2);
+
+        //final coordinate of the pixel on the image plane is
+        //(PixelCamerax, PixelCameray);
+
+        //ray origin
+        Vector o = Vector(0, 0, 0);
+        //ray direction
+        Vector dir = Vector(PixelCamerax, PixelCameray, -1) - o;
+        dir = dir.normalize();
         Vector mycolor = rayTrace(o,dir,objs, sizeof(objs)/sizeof(objs[0]),y,0);
       //  std::cout << mycolor << std::endl;
         if (mycolor.x > 255)
