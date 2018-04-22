@@ -45,6 +45,122 @@ double dot(Vector v, Vector b){
   return (v.x*b.x+v.y*b.y+v.z*b.z);
 }
 
+struct Vector4 {
+  double a,b,c,d;
+  Vector4(){
+    a=0;
+    b=0;
+    c=0;
+    d=0;
+  }
+  Vector4(double aa, double bb, double cc,double dd){
+      a=aa;
+      b=bb;
+      c=cc;
+      d=dd;
+  }
+  //normalize vector so length is 1
+  Vector normalize(){
+    double num = sqrt(a*a+b*b+c*c+d*d);
+    return Vector4(a/num, b/num,c/num, d/num);
+  }
+
+  //overriding opertors to make life easier
+  Vector4 operator + (Vector4 v){
+    return Vector4(a+v.a,b+v.b,c+v.c,d+v.d);
+  }
+  Vector4 operator - (Vector4 v){
+    return Vector4(a-v.a,b-v.b,c-v.c,d-v.d);
+  }
+  Vector4 operator * (double num){
+    return Vector4 (a*num,b*num,c*num,d*num);
+  }
+  Vector4 operator / (double d){
+    return Vector4(a/num,b/num,c/num,d/num);
+  }
+};
+
+double dot(Vector v, Vector b){
+  return (v.x*b.x+v.y*b.y+v.z*b.z);
+}
+
+Vector cross (Vector v, Vector b){
+  return Vector(v.y*b.z - v.z*b.y, v.z*b.x - v.x*b.z, v.x*b.y - a.y*b.x);
+}
+
+double dot4(Vector4 v1, Vector4 v2){
+  return (v1.a*v2.a+v1.b*v2.b+v1.c*v2.c,v1.d*v2.d);
+}
+
+struct matrix4 {
+  Vector4 v1;
+  Vector4 v2;
+  Vector4 v3;
+  Vector4 v4;
+
+  matrix4(){
+    v1 = Vector4(0,0,0,0);
+    v2 = Vector4(0,0,0,0);
+    v3 = Vector4(0,0,0,0);
+    v4 = Vector4(0,0,0,0);
+  }
+
+  matrix4(Vector4 vec1,Vector4 vec2,Vector4 vec3,Vector4 vec4){
+    v1 = vec1;
+    v2 = vec2;
+    v3 = vec3;
+    v4 = vec4;
+  }
+
+  matrix4 operator * (matrix4 M){
+    matrix4 finalM = matrix4();
+    finalM.v1.a = v1.a*M.v1.a + v1.b*M.v2.a + v1.c*M.v3.a + v1.d*M.v4.a;
+    finalM.v1.b = v1.a*M.v1.b + v1.b*M.v2.b + v1.c*M.v3.b + v1.d*M.v4.b;
+    finalM.v1.c = v1.a*M.v1.c + v1.b*M.v2.c + v1.c*M.v3.c + v1.d*M.v4.c;
+    finalM.v1.d = v1.a*M.v1.d + v1.b*M.v2.d + v1.c*M.v3.d + v1.d*M.v4.d;
+
+    finalM.v2.a = v2.a*M.v1.a + v2.b*M.v2.a + v2.c*M.v3.a + v2.d*M.v4.a;
+    finalM.v2.b = v2.a*M.v1.b + v2.b*M.v2.b + v2.c*M.v3.b + v2.d*M.v4.b;
+    finalM.v2.c = v2.a*M.v1.c + v2.b*M.v2.c + v2.c*M.v3.c + v2.d*M.v4.c;
+    finalM.v2.d = v2.a*M.v1.d + v2.b*M.v2.d + v2.c*M.v3.d + v2.d*M.v4.d;
+
+    finalM.v3.a = v3.a*M.v1.a + v3.b*M.v2.a + v3.c*M.v3.a + v3.d*M.v4.a;
+    finalM.v3.b = v3.a*M.v1.b + v3.b*M.v2.b + v3.c*M.v3.b + v3.d*M.v4.b;
+    finalM.v3.c = v3.a*M.v1.c + v3.b*M.v2.c + v3.c*M.v3.c + v3.d*M.v4.c;
+    finalM.v3.d = v3.a*M.v1.d + v3.b*M.v2.d + v3.c*M.v3.d + v3.d*M.v4.d;
+
+    finalM.v4.a = v4.a*M.v1.a + v4.b*M.v2.a + v4.c*M.v3.a + v4.d*M.v4.a;
+    finalM.v4.b = v4.a*M.v1.b + v4.b*M.v2.b + v4.c*M.v3.b + v4.d*M.v4.b;
+    finalM.v4.c = v4.a*M.v1.c + v4.b*M.v2.c + v4.c*M.v3.c + v4.d*M.v4.c;
+    finalM.v4.d = v4.a*M.v1.d + v4.b*M.v2.d + v4.c*M.v3.d + v4.d*M.v4.d;
+    return finalM;
+  }
+}
+
+matrix4 cameraToWorld(Vector e, Vector d, Vector up){
+  Vector zaxis = e - d;
+  zaxis = zaxis.normalize();
+  Vector xaxis = cross(up,zaxis);
+  xaxis = xaxis.normalize();
+  Vector yaxis = cross(x=zaxis,xaxis);
+
+  matrix4 orientation = matrix4();
+  orientation.v1 = Vector4(xaxis.x,yaxis.x,zaxis.x,0);
+  orientation.v2 = Vector4(xaxis.y,yaxis.y,zaxis.y,0);
+  orientation.v3 = Vector4(xaxis.z,yaxis.z,zaxis.z,0);
+  orientation.v4 = Vector4(0,0,0,1);
+
+  matrix4 translation = matrix4();
+  translation.v1 = Vector4(1,0,0,0);
+  translation.v2 = Vector4(0,1,0,0);
+  translation.v3 = Vector4(0,0,1,0);
+  translation.v4 = Vector4(-e.x,-e.y,-e.z,1);
+
+  return (orientation * translation);
+
+
+}
+
 struct Sphere{
   Vector origin;
   double radius;
@@ -319,12 +435,15 @@ int main()
 
         //final coordinate of the pixel on the image plane is
         //(PixelCamerax, PixelCameray);
-
         //ray origin
         Vector o = Vector(0, 0, 0);
         //ray direction
         Vector dir = Vector(PixelCamerax, PixelCameray, -1) - o;
         dir = dir.normalize();
+
+        matrix4 cameraToWorldM = cameraToWorld(o,dir,Vector(0,1,0));
+
+
         Vector mycolor = rayTrace(o,dir,objs, sizeof(objs)/sizeof(objs[0]),y,0);
       //  std::cout << mycolor << std::endl;
         if (mycolor.x > 255)
