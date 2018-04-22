@@ -3,6 +3,9 @@
 #include <limits>
 #include <algorithm>
 #include <iostream>
+#include <cstdlib>
+#include <random>
+
 using namespace cimg_library;
 using namespace std;
 struct Vector {
@@ -71,6 +74,87 @@ struct Sphere{
   Vector normal(Vector ray){
     return (origin-ray)/radius;
   }
+
+};
+
+struct Box {
+
+
+	Box(Vector &vMin, Vector &vMax) {
+
+		bounds[0] = vMin;
+		bounds[1] = vMax;
+
+	}
+
+	Vector bounds[2];
+
+	bool intersect(Vector e, Vector d, double &t) {
+
+		float tMin;
+		float tMax;
+		float tYMin;
+		float tYMax;
+		float tZMin;
+		float tZMax;
+
+		tMin = (bounds[0].x - e.x) / d.x;
+		tMax = (bounds[1].x - e.x) / d.x;
+
+		if (tMin > tMax) {
+
+			swap(tMin, tMax);
+		}
+
+		tYMin = (bounds[0].y - e.y) / d.y;
+		tYMax = (bounds[1].y - e.y) / d.y;
+
+		if(tYMin > tYMax) {
+
+			swap(tYMin, tYMax);
+		}
+
+		if((tMin > tYMax) || (tYMin > tMax)) {
+
+			return false;
+		}
+
+		if(tYMin > tMin) {
+
+			tMin = tYMin;
+		}
+
+		if(tYMax < tMax) {
+
+			tMax = tYMax;
+		}
+
+		tZMin = (bounds[2].z - e.z) / d.z;
+		tZMax = (bounds[2].z - e.z) / d.z;
+
+		if(tZMin > tZMax) {
+
+			swap(tZMin, tZMax);
+		}
+
+		if((tMin > tZMax) || (tZMin > tMax)) {
+
+			return false;
+		}
+
+		if(tZMin > tMin) {
+
+			tMin = tZMin;
+		}
+
+		if(tZMax < tMax) {
+
+			tMax = tZMax;
+		}
+
+		return true;
+
+	}
 
 };
 
@@ -170,9 +254,52 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
 
   Vector red(200,30,30);
 
+  Box b(Vector(0,0,0), Vectir(50, 50, 1));
+
   plane p(Vector(0,100,300),Vector(0,-2,-1),red,.5,1.5,1,50);
 
   Vector light = Vector(2, 1, 2);
+
+
+  //Box intersection
+  if (b.intersect(e, d, t) && t > 0) {
+      if (t < minT){
+        minT = t;
+        //set pixel color
+        //light source top middle
+        Vector viewRay = e + d * t;
+        Vector plight = Vector(light.x, light.y, light.z);
+        Vector normal = p.normal;
+        indexTemp = -1;
+        double la;
+        Vector r = normal * (2 * dot(normal, plight)) - plight;
+        if(isShadow(objs,size,viewRay,plight,normal,indexTemp)){
+          la = .5*p.ka * (intensity);
+          la = (la * y/192);
+          //lk =0;
+          //ls =0;
+        }
+        else {
+          la = p.ka * (intensity);
+          la = (la * y/192);
+        }
+        if (p.color.x * la > 255) {
+          returnColor.x = 255;
+        } else {
+          returnColor.x = p.color.x * la;
+        }
+        if (p.color.y * la > 255) {
+          returnColor.y = 255;
+        } else {
+          returnColor.y = p.color.y * la;
+        }
+        if (p.color.z * la > 255) {
+          returnColor.z = 255;
+        } else {
+          returnColor.z = p.color.z * la;
+        }
+      }
+  }
 
   if (p.intersect(e, d, t) && t > 0) {
       if (t < minT){
