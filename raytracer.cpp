@@ -79,15 +79,24 @@ struct Sphere{
 
 struct Box {
 
+	Vector color;
+	Vector normal;
+	double kk, ks, ka;
+	int pow;
 
-	Box(Vector &vMin, Vector &vMax) {
+	Box(const Vector &vMin, const Vector &vMax, Vector n, Vector c, double k1, double k2, double k3, int p) {
 
 		bounds[0] = vMin;
 		bounds[1] = vMax;
 
-	}
+		color = c;
+		normal = Vector(n.x, n.y, n.z);
+		kk = k1;
+		ks = k2;
+		ka = k3;
+		pow = p;
 
-	Vector bounds[2];
+	}
 
 	bool intersect(Vector e, Vector d, double &t) {
 
@@ -152,9 +161,23 @@ struct Box {
 			tMax = tZMax;
 		}
 
+		t = tMin;
+
+		if(t < 0) {
+
+			t = tMax;
+
+			if(t < 0) {
+
+				return false;
+			}
+		}
+
 		return true;
 
 	}
+
+	Vector bounds[2];
 
 };
 
@@ -254,7 +277,9 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
 
   Vector red(200,30,30);
 
-  Box b(Vector(0,0,0), Vectir(50, 50, 1));
+  Vector blue(0, 0, 255);
+
+  Box b(Vector(50,50,50), Vector(200, 200, 90), Vector(0,-2,-1), blue, 0.5, 1.5, 1, 50);
 
   plane p(Vector(0,100,300),Vector(0,-2,-1),red,.5,1.5,1,50);
 
@@ -269,34 +294,34 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
         //light source top middle
         Vector viewRay = e + d * t;
         Vector plight = Vector(light.x, light.y, light.z);
-        Vector normal = p.normal;
+        Vector normal = b.normal;
         indexTemp = -1;
         double la;
         Vector r = normal * (2 * dot(normal, plight)) - plight;
         if(isShadow(objs,size,viewRay,plight,normal,indexTemp)){
-          la = .5*p.ka * (intensity);
+          la = .5*b.ka * (intensity);
           la = (la * y/192);
           //lk =0;
           //ls =0;
         }
         else {
-          la = p.ka * (intensity);
+          la = b.ka * (intensity);
           la = (la * y/192);
         }
-        if (p.color.x * la > 255) {
+        if (b.color.x * la > 255) {
           returnColor.x = 255;
         } else {
-          returnColor.x = p.color.x * la;
+          returnColor.x = b.color.x * la;
         }
-        if (p.color.y * la > 255) {
+        if (b.color.y * la > 255) {
           returnColor.y = 255;
         } else {
-          returnColor.y = p.color.y * la;
+          returnColor.y = b.color.y * la;
         }
-        if (p.color.z * la > 255) {
+        if (b.color.z * la > 255) {
           returnColor.z = 255;
         } else {
-          returnColor.z = p.color.z * la;
+          returnColor.z = b.color.z * la;
         }
       }
   }
