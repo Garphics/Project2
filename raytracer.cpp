@@ -60,7 +60,7 @@ struct Vector4 {
       d=dd;
   }
   //normalize vector so length is 1
-  Vector normalize(){
+  Vector4 normalize(){
     double num = sqrt(a*a+b*b+c*c+d*d);
     return Vector4(a/num, b/num,c/num, d/num);
   }
@@ -75,17 +75,14 @@ struct Vector4 {
   Vector4 operator * (double num){
     return Vector4 (a*num,b*num,c*num,d*num);
   }
-  Vector4 operator / (double d){
+  Vector4 operator / (double num){
     return Vector4(a/num,b/num,c/num,d/num);
   }
 };
 
-double dot(Vector v, Vector b){
-  return (v.x*b.x+v.y*b.y+v.z*b.z);
-}
 
 Vector cross (Vector v, Vector b){
-  return Vector(v.y*b.z - v.z*b.y, v.z*b.x - v.x*b.z, v.x*b.y - a.y*b.x);
+  return Vector(v.y*b.z - v.z*b.y, v.z*b.x - v.x*b.z, v.x*b.y - v.y*b.x);
 }
 
 double dot4(Vector4 v1, Vector4 v2){
@@ -135,14 +132,14 @@ struct matrix4 {
     finalM.v4.d = v4.a*M.v1.d + v4.b*M.v2.d + v4.c*M.v3.d + v4.d*M.v4.d;
     return finalM;
   }
-}
+};
 
 matrix4 cameraToWorld(Vector e, Vector d, Vector up){
   Vector zaxis = e - d;
   zaxis = zaxis.normalize();
   Vector xaxis = cross(up,zaxis);
   xaxis = xaxis.normalize();
-  Vector yaxis = cross(x=zaxis,xaxis);
+  Vector yaxis = cross(zaxis,xaxis);
 
   matrix4 orientation = matrix4();
   orientation.v1 = Vector4(xaxis.x,yaxis.x,zaxis.x,0);
@@ -289,7 +286,7 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
 
   Vector red(200,30,30);
 
-  plane p(Vector(0,0,-17),Vector(0,2,1),red,.5,1.5,1,50);
+  plane p(Vector(0,0,-17),Vector(0,1,0),red,.5,1.5,1,50);
 
   Vector light = Vector(2, -1, -2);
 
@@ -396,22 +393,22 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
 int main()
 {
 
-  int imageWidth = 256;
-  int imageHeight = 256;
-  double intensity = 1.5;
-  Sphere sphere1(Vector(0,0,-8),1);
-  Sphere sphere2(Vector(-3,0,-8),1);
+  int imageWidth = 1000;
+  int imageHeight = 1000;
+  double intensity = 1;
+  Sphere sphere1(Vector(1,1,-8),1);
+  Sphere sphere2(Vector(-1,.5,-5),.5);
   Vector blue(15,15,75);
   Vector green(15,75,15);
 
-  Object objs[2] = {Object(sphere1,blue,1.5,1.5,.5,50,0,.3),Object(sphere2,green,1.5,1.5,.5,50,1,.3)} ;//you can add spheres as objects and I could expand it to other objects
+  Object objs[2] = {Object(sphere1,blue,1.5,1.5,.5,100,0,.3),Object(sphere2,green,1.5,1.5,.5,100,1,.3)} ;//you can add spheres as objects and I could expand it to other objects
   //Compute u,v,w basis vectors
   //Creating blank 256x256 image
   CImg<unsigned char> img(imageWidth,imageHeight,1,3,0);
   //for each pixel
-  for (int y = 0; y<256; y++)
+  for (int y = 0; y<imageHeight; y++)
   {
-    for(int x=0;x<256;x++)
+    for(int x=0;x<imageWidth;x++)
     {
         //pixelNDC is the normalized pixel position
         //NDC is Normalized Device Coordinates
@@ -436,13 +433,21 @@ int main()
         //final coordinate of the pixel on the image plane is
         //(PixelCamerax, PixelCameray);
         //ray origin
-        Vector o = Vector(0, 0, 0);
+        Vector o = Vector(0, 2, 0);
+        double angleY = .2;
         //ray direction
-        Vector dir = Vector(PixelCamerax, PixelCameray, -1) - o;
+        Vector dir = Vector(PixelCamerax, PixelCameray - angleY, -1) - o;
         dir = dir.normalize();
 
         matrix4 cameraToWorldM = cameraToWorld(o,dir,Vector(0,1,0));
 
+        Vector4 dir4 = Vector4(PixelCamerax,PixelCameray- angleY,-1,0);
+        matrix4 dirM = matrix4(dir4,Vector4(),Vector4(),Vector4());
+
+        matrix4 newDirM = cameraToWorldM*dirM;
+
+        dir = Vector(newDirM.v1.a,newDirM.v1.b, newDirM.v1.c);
+        dir = dir.normalize();
 
         Vector mycolor = rayTrace(o,dir,objs, sizeof(objs)/sizeof(objs[0]),y,0);
       //  std::cout << mycolor << std::endl;
