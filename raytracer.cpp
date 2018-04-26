@@ -190,6 +190,107 @@ struct Sphere{
 
 };
 
+struct Ray {
+
+  Ray(const Vector &orig, const Vector &dir) {
+
+    ori = orig;
+    direc = dir;
+    invdir = Vector(1 / direc.x, 1 / direc.y, 1 / direc.z);
+    sign[0] = (invdir.x < 0);
+    sign[1] = (invdir.y < 0);
+    sign[2] = (invdir.z < 0);
+  }
+
+  Vector ori;
+  Vector direc;
+  Vector invdir;
+  int sign[3];
+};
+
+struct Box {
+
+  Vector color;
+  Vector normal;
+  double kk, ks, ka;
+  int pow;
+
+  Box(const Vector &vMin, const Vector &vMax, Vector n, Vector c, double k1, double k2, double k3, int p) {
+
+    bounds[0] = vMin;
+    bounds[1] = vMax;
+
+    color = c;
+    normal = Vector(n.x, n.y, n.z);
+    kk = k1;
+    ks = k2;
+    ka = k3;
+    pow = p;
+
+  }
+
+  bool intersect(Vector e, Vector d, double &t) {
+
+    Ray r(e, d);
+    float tMin;
+    float tMax;
+    float tYMin;
+    float tYMax;
+    float tZMin;
+    float tZMax;
+
+    tMin = (bounds[r.sign[0]].x - r.ori.x) * r.invdir.x;
+    tMax = (bounds[1 - r.sign[0]].x - r.ori.x) * r.invdir.x;
+    tYMin = (bounds[r.sign[1]].y - r.ori.y) * r.invdir.y;
+    tYMax = (bounds[1 - r.sign[1]].y - r.ori.y) * r.invdir.y;
+
+    if((tMin > tYMax) || (tYMin > tMax)) {
+      return false;
+    }
+
+    if(tYMin > tMin) {
+      tMin = tYMin;
+    }
+
+    if(tYMax < tMax) {
+      tMax = tYMax;
+    }
+
+    tZMin = (bounds[r.sign[2]].z - r.ori.z) * r.invdir.z;
+    tZMax = (bounds[1 - r.sign[2]].z - r.ori.z) * r.invdir.z;
+
+    if((tMin > tZMax) || (tZMin > tMax)) {
+      return false;
+    }
+
+    if(tZMin > tMin) {
+      tMin = tZMin;
+    }
+
+    if(tZMax < tMax) {
+      tMax = tZMax;
+    }
+
+    t = tMin;
+
+    if(t < 0) {
+
+      t = tMax;
+
+      if(t < 0){
+
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  Vector bounds[2];
+
+};
+
+
 struct plane
 {
     Vector point;
@@ -282,11 +383,55 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
  //  Vector rgb;
   // Sphere hitObj = NULL;
 
+  Vector blue(0, 0, 255);
+
   Vector red(200,30,30);
 
   plane p(Vector(0,0,-17),Vector(0,1,0),red,.5,1.5,1,50);
 
+  Box b(Vector(-3, 0, -8), Vector(-2, 1, -7), Vector(0, -2, -1), blue, 0.5, 1.5, 1, 50);
+
   Vector light = Vector(2, -1, -2);
+
+    //box intersection
+    if (b.intersect(e, d, t) && t > 0) {
+      if (t < minT){
+        minT = t;
+        //set pixel color
+        //light source top middle
+        Vector viewRay = e + d * t;
+        Vector plight = Vector(light.x, light.y, light.z);
+        Vector normal = b.normal;
+        indexTemp = -1;
+        double la;
+        Vector r = normal * (2 * dot(normal, plight)) - plight;
+        if(isShadow(objs,size,viewRay,plight,normal,indexTemp)){
+          la = .5*b.ka * (intensity);
+          la = (la * y/192);
+          //lk =0;
+          //ls =0;
+        }
+        else {
+          la = b.ka * (intensity);
+          la = (la * y/192);
+        }
+        if (b.color.x * la > 255) {
+          returnColor.x = 255;
+        } else {
+          returnColor.x = b.color.x * la;
+        }
+        if (b.color.y * la > 255) {
+          returnColor.y = 255;
+        } else {
+          returnColor.y = b.color.y * la;
+        }
+        if (b.color.z * la > 255) {
+          returnColor.z = 255;
+        } else {
+          returnColor.z = b.color.z * la;
+        }
+      }
+  }
 
   if (p.intersect(e, d, t) && t > 0) {
       if (t < minT){
