@@ -77,107 +77,103 @@ struct Sphere{
 
 };
 
+struct Ray {
+
+  Ray(const Vector &orig, const Vector &dir) {
+
+    ori = orig;
+    direc = dir;
+    invdir = Vector(1 / direc.x, 1 / direc.y, 1 / direc.z);
+    sign[0] = (invdir.x < 0);
+    sign[1] = (invdir.y < 0);
+    sign[2] = (invdir.z < 0);
+  }
+
+  Vector ori;
+  Vector direc;
+  Vector invdir;
+  int sign[3];
+};
+
 struct Box {
 
-	Vector color;
-	Vector normal;
-	double kk, ks, ka;
-	int pow;
+  Vector color;
+  Vector normal;
+  double kk, ks, ka;
+  int pow;
 
-	Box(const Vector &vMin, const Vector &vMax, Vector n, Vector c, double k1, double k2, double k3, int p) {
+  Box(const Vector &vMin, const Vector &vMax, Vector n, Vector c, double k1, double k2, double k3, int p) {
 
-		bounds[0] = vMin;
-		bounds[1] = vMax;
+    bounds[0] = vMin;
+    bounds[1] = vMax;
 
-		color = c;
-		normal = Vector(n.x, n.y, n.z);
-		kk = k1;
-		ks = k2;
-		ka = k3;
-		pow = p;
+    color = c;
+    normal = Vector(n.x, n.y, n.z);
+    kk = k1;
+    ks = k2;
+    ka = k3;
+    pow = p;
 
-	}
+  }
 
-	bool intersect(Vector e, Vector d, double &t) {
+  bool intersect(Vector e, Vector d, double &t) {
 
-		float tMin;
-		float tMax;
-		float tYMin;
-		float tYMax;
-		float tZMin;
-		float tZMax;
+    Ray r(e, d);
+    float tMin;
+    float tMax;
+    float tYMin;
+    float tYMax;
+    float tZMin;
+    float tZMax;
 
-		tMin = (bounds[0].x - e.x) / d.x;
-		tMax = (bounds[1].x - e.x) / d.x;
+    tMin = (bounds[r.sign[0]].x - r.ori.x) * r.invdir.x;
+    tMax = (bounds[1 - r.sign[0]].x - r.ori.x) * r.invdir.x;
+    tYMin = (bounds[r.sign[1]].y - r.ori.y) * r.invdir.y;
+    tYMax = (bounds[1 - r.sign[1]].y - r.ori.y) * r.invdir.y;
 
-		if (tMin > tMax) {
+    if((tMin > tYMax) || (tYMin > tMax)) {
+      return false;
+    }
 
-			swap(tMin, tMax);
-		}
+    if(tYMin > tMin) {
+      tMin = tYMin;
+    }
 
-		tYMin = (bounds[0].y - e.y) / d.y;
-		tYMax = (bounds[1].y - e.y) / d.y;
+    if(tYMax < tMax) {
+      tMax = tYMax;
+    }
 
-		if(tYMin > tYMax) {
+    tZMin = (bounds[r.sign[2]].z - r.ori.z) * r.invdir.z;
+    tZMax = (bounds[1 - r.sign[2]].z - r.ori.z) * r.invdir.z;
 
-			swap(tYMin, tYMax);
-		}
+    if((tMin > tZMax) || (tZMin > tMax)) {
+      return false;
+    }
 
-		if((tMin > tYMax) || (tYMin > tMax)) {
+    if(tZMin > tMin) {
+      tMin = tZMin;
+    }
 
-			return false;
-		}
+    if(tZMax < tMax) {
+      tMax = tZMax;
+    }
 
-		if(tYMin > tMin) {
+    t = tMin;
 
-			tMin = tYMin;
-		}
+    if(t < 0) {
 
-		if(tYMax < tMax) {
+      t = tMax;
 
-			tMax = tYMax;
-		}
+      if(t < 0){
 
-		tZMin = (bounds[2].z - e.z) / d.z;
-		tZMax = (bounds[2].z - e.z) / d.z;
+        return false;
+      }
+    }
 
-		if(tZMin > tZMax) {
+    return true;
+  }
 
-			swap(tZMin, tZMax);
-		}
-
-		if((tMin > tZMax) || (tZMin > tMax)) {
-
-			return false;
-		}
-
-		if(tZMin > tMin) {
-
-			tMin = tZMin;
-		}
-
-		if(tZMax < tMax) {
-
-			tMax = tZMax;
-		}
-
-		t = tMin;
-
-		if(t < 0) {
-
-			t = tMax;
-
-			if(t < 0) {
-
-				return false;
-			}
-		}
-
-		return true;
-
-	}
-
-	Vector bounds[2];
+  Vector bounds[2];
 
 };
 
@@ -279,7 +275,7 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
 
   Vector blue(0, 0, 255);
 
-  Box b(Vector(50,50,140), Vector(200, 200, 160), Vector(0,-1,-2), blue, 0.5, 1.5, 1, 50);
+  Box b(Vector(50,50,140), Vector(100, 100, 160), Vector(0,-1,-2), blue, 0.5, 1.5, 1, 50);
 
   plane p(Vector(0,100,300),Vector(0,-2,-1),red,.5,1.5,1,50);
 
