@@ -275,7 +275,7 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
 
   Vector blue(0, 0, 255);
 
-  Box b(Vector(50,50,140), Vector(100, 100, 160), Vector(0,-1,-2), blue, 0.5, 1.5, 1, 50);
+  Box b(Vector(50,50,140), Vector(100, 100, 160), Vector(0, -2, -1), blue, 0.5, 1.5, 1, 50);
 
   plane p(Vector(0,100,300),Vector(0,-2,-1),red,.5,1.5,1,50);
 
