@@ -290,6 +290,67 @@ struct Box {
 
 };
 
+struct Cylinder : Object
+{
+  Vector o;
+  double rad;
+  double h;
+  Cylinder(Vector origin, double radius, double height)
+  {
+    h = height;
+    rad = radius;
+    o = origin;
+  }
+
+  bool intersect(Vector d,  Vector e, double &t)
+    {
+        //double ln = dot(normal,d);
+        double zmin;
+        double zmax;
+          double a = (d.x*d.x) + (d.y*d.y);
+          double b = 2*(e.y*d.y + e.y*d.y);
+          double c = (e.x*e.x) + (e.y*e.y) - 1;
+          double discriminant = (b*b) - (4*a*c);
+        
+      if(discriminant < 0)
+      {
+        return false;
+      }
+       else
+      {
+         double num = sqrt(discriminant);
+         double t1 = ((-b)+num)/(2*a);
+         double t2 = ((-b)-num)/(2*a);
+        //t=(t1 < t2) ? t1:t2;
+         double z1 = e.z+ (t1*d.z);
+         double z2 = e.z + (t2*d.z);
+
+         if( (zmin < z1 < zmax) || (zmin < z2 < zmax))
+        {
+
+          if((zmin < z1 < zmax) && (zmin < z2 < zmax))
+          {
+            t = (t1 < t2) ? t1 :t2;
+          }
+          else if(zmin < z1 < zmax)
+          {
+            t = t1;
+          }
+          else{t = t2;}
+          //  t = (t1 < t2) ? t1 :t2;
+
+          //return true;
+        }
+       
+      return true;
+     }
+    }
+
+    Vector normal(Vector ray){
+    return (o-ray)/rad;
+  }
+
+};
 
 struct plane
 {
@@ -387,11 +448,53 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
 
   Vector red(200,30,30);
 
+  Cylinder c(Vector(-4, -2, -1), 1, 2);
+
   plane p(Vector(0,0,-17),Vector(0,1,0),red,.5,1.5,1,50);
 
   Box b(Vector(-3, 0, -8), Vector(-2, 1, -7), Vector(0, -2, -1), blue, 0.5, 1.5, 1, 50);
 
   Vector light = Vector(2, -1, -2);
+
+     //cylinder intersection
+    if (c.intersect(e, d, t) && t > 0) {
+      if (t < minT){
+        minT = t;
+        //set pixel color
+        //light source top middle
+        Vector viewRay = e + d * t;
+        Vector plight = Vector(light.x, light.y, light.z);
+        Vector normal = c.normal;
+        indexTemp = -1;
+        double la;
+        Vector r = normal * (2 * dot(normal, plight)) - plight;
+        if(isShadow(objs,size,viewRay,plight,normal,indexTemp)){
+          la = .5*c.ka * (intensity);
+          la = (la * y/192);
+          //lk =0;
+          //ls =0;
+        }
+        else {
+          la = c.ka * (intensity);
+          la = (la * y/192);
+        }
+        if (c.color.x * la > 255) {
+          returnColor.x = 255;
+        } else {
+          returnColor.x = c.color.x * la;
+        }
+        if (c.color.y * la > 255) {
+          returnColor.y = 255;
+        } else {
+          returnColor.y = c.color.y * la;
+        }
+        if (c.color.z * la > 255) {
+          returnColor.z = 255;
+        } else {
+          returnColor.z = c.color.z * la;
+        }
+      }
+  }
 
     //box intersection
     if (b.intersect(e, d, t) && t > 0) {
