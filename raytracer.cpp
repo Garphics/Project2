@@ -1,5 +1,3 @@
-
-
 #include <cmath>
 #include "CImg.h"
 #include <limits>
@@ -231,18 +229,16 @@ struct Object
    // Vecotr emission_color;
     double kk,ks,ka,flect,fract;
     int pow;
-    double refr;
     Object(const Sphere &s,const Vector &c, double k1, double k2,double k3, int p, double r, double fl)
     {
       sphere = s;
       color = c;
-     // refr = r;
     //  emission_color = ec;
       kk = k1;
       ks = k2;
       ka = k3;
       flect = fl;
-     fract = r ;
+      fract = r;
       pow = p;
     }
 };
@@ -271,8 +267,6 @@ bool isShadow(Object objs[],int size,Vector viewRay, Vector light,Vector normal,
   }
   return false;
 }
-
-
 
 Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
 {
@@ -367,42 +361,97 @@ Vector rayTrace(Vector e, Vector d, Object objs[], int size, int y, int step )
               ls = hitObj.ks * (intensity) * pow(std::max(0.0, dot(normal.normalize(), r.normalize())), hitObj.pow);
               la = hitObj.ka * (intensity);
             }
-            bool inside = false;
-
-            if(dot(normal,d) > 0) {normal = Vector(0,0,0)-normal, inside = true;}
-            if((hitObj.flect > 0 || hitObj.fract > 0) && step < 5)
-            {
-              reflColor = rayTrace(viewRay, d - normal.normalize() * 2 * dot(d,normal.normalize()) ,objs,size,y,step+1);
-              refractColor = Vector(0,0,0);
-              double facing = -dot(normal,d);
-              double frensel = 1 * 0.1 + pow(1-facing,3) * (1-0.1);
-              returnColor = Vector(
-                (hitObj.color.x * la + 255 * ls + hitObj.color.x * lk) + hitObj.flect*reflColor.x,
-                (hitObj.color.y * la + 255 * ls + hitObj.color.y * lk) + hitObj.flect*reflColor.y,
-                (hitObj.color.z * la + 255 * ls + hitObj.color.z * lk) + hitObj.flect*reflColor.z);
-                if(hitObj.fract > 0)
-                {
-                  double indexR = 1.01, eta = (inside) ? indexR : 1/indexR;
-                  double cos = -dot(normal,d);
-                  double k = 1 - eta * eta * (1 - cos * cos);
-                  Vector refdir = d * eta + normal * (eta * cos - sqrt(k));
-                  //Vector normRefdir = refdir.normalize();
-                 refractColor = rayTrace(viewRay - normal * 1e-4, refdir.normalize(),objs,size,y,step+1);
-                 //returnColor = Vector((hitObj.color.x * la + 255 * ls) + hitObj.fract)
-                }
-                returnColor = Vector(
-                (hitObj.color.x * la + 255 * ls + hitObj.color.x * lk) + hitObj.flect*reflColor.x * frensel + hitObj.fract*refractColor.x * (1-frensel),
-                (hitObj.color.y * la + 255 * ls + hitObj.color.y * lk) + hitObj.flect*reflColor.y * frensel + hitObj.fract*refractColor.y * (1-frensel),
-                (hitObj.color.z * la + 255 * ls + hitObj.color.z * lk) + hitObj.flect*reflColor.z  * frensel +  hitObj.fract*refractColor.z * (1-frensel)
-                );
+            Vector refractNormal = normal;
+            Vector frenselNormal = normal;
+            double kr;
+            double fcosi = dot(frenselNormal,d);
+            if(fcosi > 1){
+              fcosi = 1;
             }
-            else
-            {
+            if (fcosi < -1){
+              fcosi = -1;
+            }
+            double fetai = 1;
+            double fetat = 1.5;
+
+            if(fcosi > 0){
+              double ftemp = fetai;
+              fetai = fetat;
+              fetat = ftemp;
+            }
+            double m = 1 - fcosi*fcosi;
+            if(m < 0){
+              m=0;
+            }
+            double sint = (1/(fetai/fetat)) * sqrt(m);
+
+            if(sint>=1){
+              kr =1;
+            }
+            else{
+              double n = 1-sint*sint;
+              if(n < 0){
+                n =0;
+              }
+              double cost = sqrt(n);
+              fcosi = abs(fcosi);
+              double Rs = ((fetat * fcosi) - (fetat*cost))/((fetat * fcosi) + (fetai*cost));
+              double Rp = ((fetai * fcosi) - (fetat*cost))/((fetai * fcosi) + (fetat*cost));
+              kr = (Rs * Rs + Rp * Rp)/2;
+            }
+            if(step < 10){
+              reflColor = rayTrace(viewRay, d - normal.normalize() * 2 * dot(d,normal.normalize()),objs,size,y,step+1);
+              if(hitObj.fract > 0 && kr < 1){
+                returnColor = Vector(
+                  (kr)*(hitObj.color.x * la + 255 * ls + hitObj.color.x * lk) + (kr)*reflColor.x,
+                  (kr)*(hitObj.color.y * la + 255 * ls + hitObj.color.y * lk) + (kr)*reflColor.y,
+                  (kr)*(hitObj.color.z * la + 255 * ls + hitObj.color.z * lk) + (kr)*reflColor.z);
+              }
+              else{
+                returnColor = Vector(
+                  (hitObj.color.x * la + 255 * ls + hitObj.color.x * lk) + hitObj.flect*reflColor.x,
+                  (hitObj.color.y * la + 255 * ls + hitObj.color.y * lk) + hitObj.flect*reflColor.y,
+                  (hitObj.color.z * la + 255 * ls + hitObj.color.z * lk) + hitObj.flect*reflColor.z);
+              }
+              if(hitObj.fract > 0 && kr < 1){
+                Vector I = d;
+                double cosi = dot(I,refractNormal);
+                if(cosi > 1){
+                  cosi =1;
+                }
+                if(cosi < -1){
+                  cosi = -1;
+                }
+                double etai = 1;
+                double etat = 1.5;
+                if(cosi < 0){
+                  cosi = -cosi;
+                }
+                else{
+                  double temp = etai;
+                  etai = etat;
+                  etat = temp;
+                  refractNormal = Vector(0,0,0) - refractNormal;
+                }
+                double eta = 1/(etai/etat);
+                double k = 1 - eta*eta *(1-cosi*cosi);
+                Vector refdir;
+                if(k<0){
+                  refdir = Vector(0,0,0);
+                }
+                else{
+                  refdir = I * eta + refractNormal * (eta * cosi - sqrt(k));
+                }
+                //Vector normRefdir = refdir.normalize();
+                refractColor = rayTrace(viewRay - refractNormal*1e-4, refdir.normalize(),objs,size,y,step+1);
+                returnColor = Vector(returnColor.x + (1-kr)*hitObj.fract*refractColor.x, returnColor.y + (1-kr)*hitObj.fract*refractColor.y, returnColor.z + (1-kr)*hitObj.fract*refractColor.z );
+              }
+            }
+            else{
               returnColor = Vector(
                 (hitObj.color.x * la + 255 * ls + hitObj.color.x * lk),
                 (hitObj.color.y * la + 255 * ls + hitObj.color.y * lk),
                 (hitObj.color.z * la + 255 * ls + hitObj.color.z * lk));
-             
                 // return rgb;
             }
           }
@@ -418,21 +467,16 @@ int main()
   int imageWidth = 1000;
   int imageHeight = 1000;
   double intensity = 1;
-  Sphere sphere1(Vector(1,1.5,-8),1);
-  Sphere sphere2(Vector(0.5,2,-9),.5);
+  Sphere sphere1(Vector(.3,1,-6),1);
+  Sphere sphere2(Vector(-.3,1,-12),1);
   Vector blue(15,15,75);
   Vector green(15,75,15);
 
-  Object objs[2] = {Object(sphere1,blue,1.5,1.5,.5,100,1.49,.3),Object(sphere2,green,1.5,1.5,.5,100,0,.3)} ;//you can add spheres as objects and I could expand it to other objects
+  Object objs[2] = {Object(sphere1,blue,1.5,1.5,.5,100,1,0),Object(sphere2,green,1.5,1.5,.5,100,0,.5)} ;//you can add spheres as objects and I could expand it to other objects
   //Compute u,v,w basis vectors
   //Creating blank 256x256 image
   CImg<unsigned char> img(imageWidth,imageHeight,1,3,0);
-    //const unsigned char purple[] = { 255,0,255 };
-  //img.draw_text(100,100,"Hello World",purple).display("My first CImg code");
   //for each pixel
-  // CImgList<unsigned int> faces3d;
-  //const CImg<float> points3d = CImg<float>::cone3d(faces3d,50);
- // CImg<unsigned char>().display("Cone3d",points3d,faces3d);
   for (int y = 0; y<imageHeight; y++)
   {
     for(int x=0;x<imageWidth;x++)
@@ -507,4 +551,3 @@ int main()
 img.display();
   return 0;
 }
-
