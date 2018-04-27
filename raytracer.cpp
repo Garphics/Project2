@@ -158,92 +158,6 @@ matrix4 cameraToWorld(Vector e, Vector d, Vector up){
 
 }
 
-// struct Sphere{
-//   Vector origin;
-//   double radius;
-//
-//   Sphere(Vector o, double r){
-//     origin =o;
-//     radius = r;
-//   }
-//
-//   //use quadratic formula to solve (d*d)t^2 + 2d*(e-origin)t + (e-c)*(e-c)-R^2 = 0
-//     bool intersect(Vector e, Vector d, double &t){
-//     double a = dot(d,d);
-//     double b = 2*dot(d,(e-origin));
-//     double c = dot((e-origin),(e-origin)) - radius*radius;
-//     double discriminant = (b*b) - (4*a*c);
-//     if(discriminant < 0){
-//       return false;
-//     }
-//     else{
-//       double num = sqrt(discriminant);
-//       double t1 = ((-b)+num)/(2*a);
-//       double t2 = ((-b)-num)/(2*a);
-//       t=(t1 < t2) ? t1 :t2;
-//       return true;
-//     }
-//   }
-//   Vector normal(Vector ray){
-//     return (origin-ray)/radius;
-//   }
-//
-// };
-//
-struct plane
-{
-    Vector point;
-    Vector normal;
-    Vector color;
-    double kk,ks,ka;
-    int pow;
-    plane(Vector po, Vector n,Vector c, double k1, double k2, double k3, int p)
-    {
-        point = po;
-        normal = Vector(n.x,n.y,n.z);
-        color = c;
-        kk = k1;
-        ks = k2;
-        ka = k3;
-        pow = p;
-
-    }
-
-    bool intersect(Vector RayOri,  Vector RayDir, double &t)
-    {
-        double ln = dot(normal,RayDir);
-        if(abs(ln) > 1e-6)
-        {
-            Vector PROri = point - RayOri;
-            t = dot(PROri,normal)/ln;
-            return(t >= 0);
-        }
-        return false;
-    }
-};
-//
-// struct Object
-// {
-//     Sphere sphere = Sphere(Vector(0,0,0),0);
-//     Vector color;
-//    // Vecotr emission_color;
-//     double kk,ks,ka,flect,fract,ior;
-//     int pow;
-//     Object(const Sphere &s,const Vector &c, double k1, double k2,double k3, int p, double r, double fl,double indexOfReflection)
-//     {
-//       sphere = s;
-//       color = c;
-//     //  emission_color = ec;
-//       kk = k1;
-//       ks = k2;
-//       ka = k3;
-//       flect = fl;
-//       fract = r;
-//       pow = p;
-//       ior = indexOfReflection;
-//     }
-// };
-
 struct Object{
   double kk,ks,ka,flect,fract,ior;
   int pow;
@@ -294,6 +208,268 @@ struct Sphere : Object {
 
 };
 
+struct Plane : Object {
+  Vector point;
+  Vector n;
+
+  Plane(double k1,double k2,double k3, double fl, double r,double iOFr,int p, const Vector &c, Vector origin,Vector norm){
+    kk = k1;
+    ks = k2;
+    ka = k3;
+    flect = 0;
+    fract = 0;
+    ior = iOFr;
+    pow = p;
+    color = c;
+    point = origin;
+    n = norm;
+  }
+
+  bool intersect(Vector RayOri,  Vector RayDir, double &t)
+  {
+      double ln = dot(n,RayDir);
+      if(abs(ln) > 1e-6)
+      {
+          Vector PROri = point - RayOri;
+          t = dot(PROri,n)/ln;
+          return(t >= 0);
+      }
+      return false;
+  }
+  Vector normal(Vector ray){
+    return n;
+  }
+};
+
+struct Ray {
+
+  Ray(const Vector &orig, const Vector &dir) {
+
+    ori = orig;
+    direc = dir;
+    invdir = Vector(1 / direc.x, 1 / direc.y, 1 / direc.z);
+    sign[0] = (invdir.x < 0);
+    sign[1] = (invdir.y < 0);
+    sign[2] = (invdir.z < 0);
+  }
+
+  Vector ori;
+  Vector direc;
+  Vector invdir;
+  int sign[3];
+};
+
+struct Box:Object {
+
+  Vector origin;
+  double size;
+
+  Box(double k1,double k2,double k3, double fl, double r,double iOFr,int p, const Vector &c,const Vector &o, double s) {
+    kk = k1;
+    ks = k2;
+    ka = k3;
+    flect = fl;
+    fract = r;
+    ior = iOFr;
+    pow = p;
+    color = c;
+    size = s;
+    origin = o;
+    // const Vector &vMin, const Vector &vMax
+    // bounds[0] = vMin;
+    // bounds[1] = vMax;
+  }
+
+  bool intersect(Vector e, Vector d, double &t) {
+
+    Vector vMin = Vector(origin.x - size/2,origin.y - size/2,origin.z - size/2);
+    Vector vMax = Vector(origin.x + size/2,origin.y + size/2,origin.z + size/2);
+    Vector bounds[2] = {vMin,vMax};
+
+    Ray r(e, d);
+    float tMin;
+    float tMax;
+    float tYMin;
+    float tYMax;
+    float tZMin;
+    float tZMax;
+
+    tMin = (bounds[r.sign[0]].x - r.ori.x) * r.invdir.x;
+    tMax = (bounds[1 - r.sign[0]].x - r.ori.x) * r.invdir.x;
+    tYMin = (bounds[r.sign[1]].y - r.ori.y) * r.invdir.y;
+    tYMax = (bounds[1 - r.sign[1]].y - r.ori.y) * r.invdir.y;
+
+    if((tMin > tYMax) || (tYMin > tMax)) {
+      return false;
+    }
+
+    if(tYMin > tMin) {
+      tMin = tYMin;
+    }
+
+    if(tYMax < tMax) {
+      tMax = tYMax;
+    }
+
+    tZMin = (bounds[r.sign[2]].z - r.ori.z) * r.invdir.z;
+    tZMax = (bounds[1 - r.sign[2]].z - r.ori.z) * r.invdir.z;
+
+    if((tMin > tZMax) || (tZMin > tMax)) {
+      return false;
+    }
+
+    if(tZMin > tMin) {
+      tMin = tZMin;
+    }
+
+    if(tZMax < tMax) {
+      tMax = tZMax;
+    }
+
+    t = tMin;
+
+    if(t < 0) {
+
+      t = tMax;
+
+      if(t < 0){
+
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  Vector normal(Vector ray){
+    Vector norm;
+    Vector localPoint = ray - origin;
+    double min= std::numeric_limits<double>::max();
+    double dis = std::abs(size - std::abs(localPoint.x));
+    if(dis < min){
+      min = dis;
+      norm = Vector(-1,0,0);
+      if(localPoint.x < 0){
+          norm = Vector(0,0,0) - norm;
+      }
+    }
+    dis = std::abs(size - std::abs(localPoint.y));
+    if(dis < min){
+      min = dis;
+      norm = Vector(0,-1,0);
+      if(localPoint.y < 0){
+          norm = Vector(0,0,0) - norm;
+      }
+    }
+    dis = std::abs(size - std::abs(localPoint.z));
+    if(dis < min){
+      min = dis;
+      norm = Vector(0,0,-1);
+      if(localPoint.z < 0){
+          norm = Vector(0,0,0) - norm;
+      }
+    }
+    return norm;
+  }
+
+};
+
+struct Cylinder : Object {
+
+  Vector n;
+  double radius;
+  Vector origin;
+  double height;
+
+  Cylinder(double k1,double k2,double k3, double fl, double r,double iOFr,int p, const Vector &c,const Vector &o, double rad, double h){
+    kk = k1;
+    ks = k2;
+    ka = k3;
+    flect = fl;
+    fract = r;
+    ior = iOFr;
+    pow = p;
+    color = c;
+    origin = o;
+    radius = rad;
+    height = h;
+  }
+
+  bool intersect(Vector e, Vector d, double &t){
+    Vector translate = e - origin;
+
+    double a = d.x *d.x + d.z*d.z;
+    double b = 2*translate.x *d.x + 2*translate.z*d.z;
+    double c = translate.x *translate.x + translate.z*translate.z - radius;
+
+    double discriminant = b*b - 4*a*c;
+    if(discriminant < 0){
+      return false;
+    }
+    double num = sqrt(discriminant);
+    double t1 = ((-b)+num)/(2*a);
+    double t2 = ((-b)-num)/(2*a);
+
+    if(t1<t2){
+      double tmp = t1;
+      t1=t2;
+      t2=tmp;
+    }
+
+    double y1 = translate.y + t1*d.y;
+    double y2 = translate.y + t2*d.y;
+
+    double low = -height/2;
+    double high = height/2;
+
+    if(y1 < low){
+      if(y2 < low){
+        return false;
+      }
+      else{
+        double th = t1 + (t2-t1) * (y1 + high)/(y1-y2);
+        if(th <=0){
+          return false;
+        }
+        t = th;
+        n = Vector(0,-1,0);
+        return true;
+      }
+    }
+    else if(y1>=low && y1<=high){
+      if(t1<=0){
+        return false;
+      }
+      t = t1;
+      Vector hitPos = translate + d*t;
+      n = Vector(hitPos.x,0,hitPos.z);
+      n = n.normalize();
+      return true;
+    }
+    else if(y1>high){
+      if(y2>high){
+        return false;
+      }
+      else{
+        double th = t1 + (t2-t1) * (y1+low)/(y1-y2);
+        if(th <= 0){
+          return false;
+        }
+
+        t = th;
+        n = Vector(0,1,0);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Vector normal(Vector ray){
+    return n;
+  }
+
+};
+
 double isShadow(Object** objs,int size,Vector viewRay, Vector light,Vector normal, int currentObj){
   Vector l = Vector(-light.x, -light.y, -light.z);
   for(int i = 0;i<size;i++){
@@ -307,13 +483,13 @@ double isShadow(Object** objs,int size,Vector viewRay, Vector light,Vector norma
     }
     //check if it a sphere or a plane
     //else if(objs[i].isSphere){
-      //remove the else when we add the above if statement about isSphere
-      else if (objs[i]->intersect(viewRay, l, distance) && distance > 0 && objs[i]->fract > 0 ) {
-        return objs[i]->fract;
-      }
-      else if (objs[i]->intersect(viewRay, l, distance) && distance > 0) {
-        return 1;
-      }
+    //remove the else when we add the above if statement about isSphere
+    else if (objs[i]->intersect(viewRay, l, distance) && distance > 0 && objs[i]->fract > 0 ) {
+      return objs[i]->fract;
+    }
+    else if (objs[i]->intersect(viewRay, l, distance) && distance > 0) {
+      return 0;
+    }
     //}
     //else if(objs.[i].isPlane){
       //check for intersection and return true if intersected
@@ -331,52 +507,7 @@ Vector rayTrace(Vector e, Vector d, Object** objs, int size, int y, int step )
   double t = std::numeric_limits<double>::infinity();
   double minT = t;
 
-  Vector red(100,10,10);
-
-  plane p(Vector(0,0,-17),Vector(0,1,0),red,.5,1.5,1,50);
-
   Vector light = Vector(2, -1, -2);
-
-  if (p.intersect(e, d, t) && t > 0) {
-      if (t < minT){
-        minT = t;
-        //set pixel color
-        //light source top middle
-        Vector viewRay = e + d * t;
-        Vector plight = Vector(light.x, light.y, light.z);
-        Vector normal = p.normal;
-        indexTemp = -1;
-        double la;
-        Vector r = normal * (2 * dot(normal, plight)) - plight;
-        double shadowVal = isShadow(objs,size,viewRay,plight,normal,indexTemp);
-        if( shadowVal >= 0){
-          la = shadowVal*p.ka*intensity ;
-          //la = (la * y/192);
-          //lk =0;
-          //ls =0;
-        }
-        else {
-          // lk = p.kk *(intensity) * std::max(0.0, dot(normal.normalize(), slight.normalize()));
-          // ls = p.ks * (intensity) * pow(std::max(0.0, dot(normal.normalize(), r.normalize())), p.pow);
-          la = p.ka * (intensity);
-        }
-        if (p.color.x * la > 255) {
-          returnColor.x = 255;
-        } else {
-          returnColor.x = p.color.x * la;
-        }
-        if (p.color.y * la > 255) {
-          returnColor.y = 255;
-        } else {
-          returnColor.y = p.color.y * la;
-        }
-        if (p.color.z * la > 255) {
-          returnColor.z = 255;
-        } else {
-          returnColor.z = p.color.z * la;
-        }
-      }
-  }
 
   for(int i = 0;i<size;i++)
   {
@@ -405,11 +536,10 @@ Vector rayTrace(Vector e, Vector d, Object** objs, int size, int y, int step )
             Vector T = viewRay * nconst + normal.normalize()*(nconst*c1 - c2);
             Vector refractColor =  Vector(0,0,0);
             double shadowVal = isShadow(objs,size,viewRay,slight,normal,indexTemp);
-            if(shadowVal > 0){
-              //cout << "shadow"<<endl;
-              la = (shadowVal)*objs[indexTemp]->ka;
-              lk =0;
-              ls =0;
+            if(shadowVal >= 0){
+              lk = (shadowVal*0.3 + 0.5) * hitObj->kk *(intensity) * std::max(0.0, dot(normal.normalize(), slight.normalize()));
+              ls = (shadowVal*0.3 + 0.5) * hitObj->ks * (intensity) * pow(std::max(0.0, dot(normal.normalize(), r.normalize())), hitObj->pow);
+              la = (shadowVal*0.3 + 0.5) * hitObj->ka * (intensity);
             }
             else{
               lk = hitObj->kk *(intensity) * std::max(0.0, dot(normal.normalize(), slight.normalize()));
@@ -456,7 +586,7 @@ Vector rayTrace(Vector e, Vector d, Object** objs, int size, int y, int step )
             }
             if(step < 10){
               //cout << "refract"<<endl;
-              reflColor = rayTrace(viewRay, d - normal.normalize() * 2 * dot(d,normal.normalize()),objs,size,y,step+1);
+              reflColor = rayTrace(viewRay - normal*1e-4, d - normal.normalize() * 2 * dot(d,normal.normalize()),objs,size,y,step+1);
               if(hitObj->fract > 0 && kr < 1){
                 returnColor = Vector(
                   (hitObj->color.x * la + 255 * ls + hitObj->color.x * lk) + (kr)*reflColor.x,
@@ -504,7 +634,6 @@ Vector rayTrace(Vector e, Vector d, Object** objs, int size, int y, int step )
               }
             }
             else{
-              //cout << "color"<<endl;
               returnColor = Vector(
                 (hitObj->color.x * la + 255 * ls + hitObj->color.x * lk),
                 (hitObj->color.y * la + 255 * ls + hitObj->color.y * lk),
@@ -514,7 +643,6 @@ Vector rayTrace(Vector e, Vector d, Object** objs, int size, int y, int step )
           }
          }
    }
-   //cout << returnColor.x <<endl;
    return returnColor;
   }
 
@@ -526,16 +654,29 @@ int main()
   double intensity = 1;
   Vector black(0,0,0);
   Vector green(15,75,15);
+  Vector red(150,15,15);
 
   Object * test1;
   Sphere s1 = Sphere(1.5,1.5,.5,0,1,0,100,1,black,Vector(0,1,-6));
   test1 = &s1;
 
   Object * test2;
-  Sphere s2 = Sphere(1.5,1.5,.5,.5,0,0,100,1,green,Vector(-.3,1,-12));
+  Sphere s2 = Sphere(1.5,1.5,.5,.5,0,0,100,1,green,Vector(1,1,-12));
   test2 = &s2;
 
-  Object * objs[2]={ test1, test2 };
+  Object * test3;
+  Plane p3 = Plane(1,1,1,0,0,0,100,red,Vector(0,0,-17),Vector(0,1,0));
+  test3 = &p3;
+
+  Object * test4;
+  Box b4 = Box(1,1,1,1,0,0,100, green,Vector(-2,.5,-7),1);
+  test4 = &b4;
+
+  Object* test5;
+  Cylinder c5 = Cylinder(1,1,1, 0, 0,0,100, green,Vector(1,1,-7),.5,2);
+  test5 = &c5;
+
+  Object * objs[4]={test2, test3, test4,test5};
   //Compute u,v,w basis vectors
   //Creating blank 256x256 image
   CImg<unsigned char> img(imageWidth,imageHeight,1,3,0);
