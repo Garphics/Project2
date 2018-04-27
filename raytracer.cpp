@@ -406,62 +406,64 @@ struct Cylinder : Object {
     if(discriminant < 0){
       return false;
     }
-    double num = sqrt(discriminant);
-    double t1 = ((-b)+num)/(2*a);
-    double t2 = ((-b)-num)/(2*a);
+    else{
+      double num = sqrt(discriminant);
+      double t1 = ((-b)+num)/(2*a);
+      double t2 = ((-b)-num)/(2*a);
 
-    if(t1<t2){
-      double tmp = t1;
-      t1=t2;
-      t2=tmp;
-    }
-
-    double y1 = translate.y + t1*d.y;
-    double y2 = translate.y + t2*d.y;
-
-    double low = -height/2;
-    double high = height/2;
-
-    if(y1 < low){
-      if(y2 < low){
-        return false;
+      if(t1>t2){
+        double tmp = t1;
+        t1=t2;
+        t2=tmp;
       }
-      else{
-        double th = t1 + (t2-t1) * (y1 + high)/(y1-y2);
-        if(th <=0){
+
+      double y1 = translate.y + t1*d.y;
+      double y2 = translate.y + t2*d.y;
+
+      double low = -height/2;
+      double high = height/2;
+
+      if(y1 < low){
+        if(y2 < low){
           return false;
         }
-        t = th;
-        n = Vector(0,-1,0);
-        return true;
+        else{
+          double th = t1 + (t2-t1) * (y1 + high)/(y1-y2);
+          if(th <=0){
+            return false;
+          }
+          t = th;
+          n = Vector(0,1,0);
+          return true;
+        }
       }
-    }
-    else if(y1>=low && y1<=high){
-      if(t1<=0){
-        return false;
-      }
-      t = t1;
-      Vector hitPos = translate + d*t;
-      n = Vector(hitPos.x,0,hitPos.z);
-      n = n.normalize();
-      return true;
-    }
-    else if(y1>high){
-      if(y2>high){
-        return false;
-      }
-      else{
-        double th = t1 + (t2-t1) * (y1+low)/(y1-y2);
-        if(th <= 0){
+      else if(y1>=low && y1<=high){
+        if(t1<=0){
           return false;
         }
-
-        t = th;
-        n = Vector(0,1,0);
+        t = t1;
+        Vector hitPos = translate + d*t;
+        n = Vector(-hitPos.x,0,-hitPos.z);
+        n = n.normalize();
         return true;
       }
+      else if(y1>high){
+        if(y2>high){
+          return false;
+        }
+        else{
+          double th = t1 + (t2-t1) * (y1+low)/(y1-y2);
+          if(th <= 0){
+            return false;
+          }
+
+          t = th;
+          n = Vector(0,-1,0);
+        return true;
+        }
+      }
+      return false;
     }
-    return false;
   }
 
   Vector normal(Vector ray){
@@ -500,7 +502,7 @@ double isShadow(Object** objs,int size,Vector viewRay, Vector light,Vector norma
 
 Vector rayTrace(Vector e, Vector d, Object** objs, int size, int y, int step )
 {
-  Vector returnColor(0,0,0);
+  Vector returnColor(80,80,80);
   int indexTemp;
   Object* hitObj;
   double intensity = 1.5;
@@ -557,7 +559,7 @@ Vector rayTrace(Vector e, Vector d, Object** objs, int size, int y, int step )
               fcosi = -1;
             }
             double fetai = 1;
-            double fetat = 1.5;
+            double fetat = hitObj->ior;
 
             if(fcosi > 0){
               double ftemp = fetai;
@@ -655,25 +657,27 @@ int main()
   Vector black(0,0,0);
   Vector green(15,75,15);
   Vector red(150,15,15);
+  Vector gray (120,120,120);
+
 
   Object * test1;
-  Sphere s1 = Sphere(1.5,1.5,.5,0,1,0,100,1,black,Vector(0,1,-6));
+  Sphere s1 = Sphere(1.5,1.5,.5,0,1,1.5,100,1,black,Vector(0,1,-6));
   test1 = &s1;
 
   Object * test2;
-  Sphere s2 = Sphere(1.5,1.5,.5,.5,0,0,100,1,green,Vector(1,1,-12));
+  Sphere s2 = Sphere(1.5,1.5,.5,0,1,1.5,100,1,black,Vector(1,1,-12));
   test2 = &s2;
 
   Object * test3;
-  Plane p3 = Plane(1,1,1,0,0,0,100,red,Vector(0,0,-17),Vector(0,1,0));
+  Plane p3 = Plane(1,1,1,0,0,0,100,gray,Vector(0,0,-17),Vector(0,1,0));
   test3 = &p3;
 
   Object * test4;
-  Box b4 = Box(1,1,1,1,0,0,100, green,Vector(-2,.5,-7),1);
+  Box b4 = Box(1,1,1,1,0,1,100, black,Vector(-2,.501,-7),1);
   test4 = &b4;
 
   Object* test5;
-  Cylinder c5 = Cylinder(1,1,1, 0, 0,0,100, green,Vector(1,1,-7),.5,2);
+  Cylinder c5 = Cylinder(1,1,1,0,1,1.3,100, black,Vector(1,.501,-7),.5,1);
   test5 = &c5;
 
   Object * objs[4]={test2, test3, test4,test5};
