@@ -479,23 +479,13 @@ double isShadow(Object** objs,int size,Vector viewRay, Vector light,Vector norma
     bool test = objs[i]->intersect(viewRay, l , distance);
     //to make sure shadow is rendered on correct side of object
     if(i == currentObj){
-      // if((normal.x*l.x > 0) || (normal.y*l.y > 0) || (normal.x*l.x > 0)){
-      //   break;
-      // }
     }
-    //check if it a sphere or a plane
-    //else if(objs[i].isSphere){
-    //remove the else when we add the above if statement about isSphere
     else if (objs[i]->intersect(viewRay, l, distance) && distance > 0 && objs[i]->fract > 0 ) {
       return objs[i]->fract;
     }
     else if (objs[i]->intersect(viewRay, l, distance) && distance > 0) {
       return 0;
     }
-    //}
-    //else if(objs.[i].isPlane){
-      //check for intersection and return true if intersected
-    //}
   }
   return -1;
 }
@@ -656,31 +646,37 @@ int main()
   double intensity = 1;
   Vector black(0,0,0);
   Vector green(15,75,15);
-  Vector red(150,15,15);
+  Vector red(120,10,10);
   Vector gray (120,120,120);
+  Vector orange(209, 107, 0);
+  Vector blue(16, 59, 147);
 
 
   Object * test1;
-  Sphere s1 = Sphere(1.5,1.5,.5,0,1,1.5,100,1,black,Vector(0,1,-6));
+  Sphere s1 = Sphere(1,1,.5,0,0,1.5,100,.5,orange,Vector(-2,.5,-7));
   test1 = &s1;
 
   Object * test2;
-  Sphere s2 = Sphere(1.5,1.5,.5,0,1,1.5,100,1,black,Vector(1,1,-12));
+  Sphere s2 = Sphere(1,0,.5,0,0,1.5,5,2,blue,Vector(5,2,-20));
   test2 = &s2;
 
   Object * test3;
-  Plane p3 = Plane(1,1,1,0,0,0,100,gray,Vector(0,0,-17),Vector(0,1,0));
+  Plane p3 = Plane(1,1,1,1,0,0,100,gray,Vector(0,0,-17),Vector(0,1,0));
   test3 = &p3;
 
   Object * test4;
-  Box b4 = Box(1,1,1,1,0,1,100, black,Vector(-2,.501,-7),1);
+  Box b4 = Box(1,1,.5,.8,0,1,100, black,Vector(-2,.751,-14),1.5);
   test4 = &b4;
 
   Object* test5;
-  Cylinder c5 = Cylinder(1,1,1,0,1,1.3,100, black,Vector(1,.501,-7),.5,1);
+  Cylinder c5 = Cylinder(1,1,1,0,1,1.3,100, black,Vector(1,.501,-6),.5,1);
   test5 = &c5;
 
-  Object * objs[4]={test2, test3, test4,test5};
+  Object * test6;
+  Sphere s6 = Sphere(1,1,.5,0,0,1.5,100,1.5,red,Vector(2,1.5,-12));
+  test6 = &s6;
+
+  Object * objs[6]={test1,test2,test3,test4,test5,test6};
   //Compute u,v,w basis vectors
   //Creating blank 256x256 image
   CImg<unsigned char> img(imageWidth,imageHeight,1,3,0);
