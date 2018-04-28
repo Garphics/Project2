@@ -576,7 +576,7 @@ Vector rayTrace(Vector e, Vector d, Object** objs, int size, int y, int step )
               double Rp = ((fetai * fcosi) - (fetat*cost))/((fetai * fcosi) + (fetat*cost));
               kr = (Rs * Rs + Rp * Rp)/2;
             }
-            if(step < 10){
+            if(step < 50){
               //cout << "refract"<<endl;
               reflColor = rayTrace(viewRay - normal*1e-4, d - normal.normalize() * 2 * dot(d,normal.normalize()),objs,size,y,step+1);
               if(hitObj->fract > 0 && kr < 1){
@@ -601,7 +601,7 @@ Vector rayTrace(Vector e, Vector d, Object** objs, int size, int y, int step )
                   cosi = -1;
                 }
                 double etai = 1;
-                double etat = 1.5;
+                double etat = hitObj->ior;
                 if(cosi < 0){
                   cosi = -cosi;
                 }
@@ -653,7 +653,7 @@ int main()
 
 
   Object * test1;
-  Sphere s1 = Sphere(1,1,.5,0,0,1.5,100,.5,orange,Vector(-2,.5,-7));
+  Sphere s1 = Sphere(1,1,.5,0,0,1.5,100,.5,orange,Vector(-2,.5,-9));
   test1 = &s1;
 
   Object * test2;
@@ -665,18 +665,34 @@ int main()
   test3 = &p3;
 
   Object * test4;
-  Box b4 = Box(1,1,.5,.8,0,1,100, black,Vector(-2,.751,-14),1.5);
+  Box b4 = Box(1,1,.5,.8,0,1,100, black,Vector(-2,.751,-17),1.5);
   test4 = &b4;
 
   Object* test5;
-  Cylinder c5 = Cylinder(1,1,1,0,1,1.3,100, black,Vector(1,.501,-6),.5,1);
+  Cylinder c5 = Cylinder(1,1,1,0,.8,1.3,100, black,Vector(-1.2,.751,-5),.25,1.5);
   test5 = &c5;
 
   Object * test6;
-  Sphere s6 = Sphere(1,1,.5,0,0,1.5,100,1.5,red,Vector(2,1.5,-12));
+  Sphere s6 = Sphere(1,1,.5,.8,0,1.5,100,1,black,Vector(1.5,1,-16));
   test6 = &s6;
 
-  Object * objs[6]={test1,test2,test3,test4,test5,test6};
+  Object* test7;
+  Cylinder c7 = Cylinder(1,1,.5,0,0,1.3,100, orange,Vector(1.4,.501,-7),.5,1);
+  test7 = &c7;
+
+  Object * test8;
+  Sphere s8 = Sphere(1,1,.5,.2,0,1.5,100,.75,blue,Vector(0,.75,-10));
+  test8 = &s8;
+
+  Object * test9;
+  Sphere s9 = Sphere(1,1,.5,0,1,1.5,100,.25,black,Vector(.75,1,-3));
+  test9 = &s9;
+
+  Object * test10;
+  Box b10 = Box(1,1,.5,0,0,1.5,100, orange,Vector(-1.5,5,-13),1);
+  test10 = &b10;
+
+  Object * objs[10]={test1,test2,test3,test4,test5,test6,test7,test8,test9,test10};
   //Compute u,v,w basis vectors
   //Creating blank 256x256 image
   CImg<unsigned char> img(imageWidth,imageHeight,1,3,0);
