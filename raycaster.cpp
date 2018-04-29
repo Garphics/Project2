@@ -981,7 +981,7 @@ void * change_light()
                         num = 9;
                     } else if (!disp.is_key9() && key9) { key9 = false; }
 
-                    if (light.z != num || negchange) {
+                    if (light.y != num || negchange) {
                         change = true;
                     } else {
                         change = false;
@@ -1118,15 +1118,12 @@ void * change_light()
                     menu.draw_text(1, 1, items, textcolor, 0, 1, 18);
 
                     disp.display(menu);
-                    if(disp.button()) {
-                        s_number = 1 + (disp.mouse_y()) / 18;
-                        disp.set_button();
-                    }
 
                 } while (!disp.is_closed() && (s_number == 3));
             }
         }
         disp.set_button();
+        key0 = false;key1= false;key2= false;key3= false;key4= false;key5= false;key6= false;key7= false;key8= false;key9 = false;
         neg = false;
     }
 
@@ -1143,7 +1140,6 @@ void menu_item(const unsigned int demo_number) {
             break;
         case 2:
             change_light();
-
             break;
         default:
             break;
@@ -1160,7 +1156,7 @@ int main(int argc, char **argv)
         unsigned char textcolor[] = {255,255,255};
         int numItems = 2;
         const char *const items = "Render\n"
-                "Next Item\n";
+                "Change Light Direction\n";
         CImg<unsigned char> menu(200,numItems * 18+ 30,1,3);
         menu.draw_text(1,1, items,textcolor,0,1,18);
         CImgDisplay disp(menu,"Menu");
