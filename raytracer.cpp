@@ -661,12 +661,12 @@ Vector gray(120, 120, 120);
 Vector orange(209, 107, 0);
 Vector blue(16, 59, 147);
 
-string pColor = "gray";
+
 
 Sphere s1 = Sphere(1, 1, .5, 0, 0, 1.5, 100, .5, orange, Vector(-2, .5, -9));
 Object *test1 = &s1;
 
-Sphere s2 = Sphere(1, 0, .5, 0, 0, 1.5, 5, 2, blue, Vector(5, 2, -20));
+Sphere s2 = Sphere(1, 0, .5, 0, 0, 1.5, 10, 2, blue, Vector(5, 2, -20));
 Object *test2 = &s2;
 
 Plane p3 = Plane(1, 1, 1, 1, 0, 0, 100, gray, Vector(0, 0, -17), Vector(0, 1, 0));
@@ -693,6 +693,7 @@ Object *test9 = &s9;
 Box b10 = Box(1, 1, .5, 0, 0, 1.5, 100, orange, Vector(-1.5, 5, -13), 1);
 Object *test10 = &b10;
 
+string color[10] = {"Orange","Blue","Gray","Black","Black","Black","Orange","Blue","Black","Orange"};
 Object *objs[10] = {test1, test2, test3, test4, test5, test6, test7, test8, test9, test10};
 
 void *change_color(int i) {
@@ -700,14 +701,15 @@ void *change_color(int i) {
     int numItems = 6;
     string it;
     ostringstream convert;
-    convert << "Current Color: " << pColor << "\nblack" << "\ngreen" << "\nred" << "\ngray" << "\norange" << "\nblue";
+    convert << "Current Color: " << color[i] << "\nBlack" << "\nGreen" << "\nRed" << "\nGray" << "\nOrange"
+            << "\nBlue";
     it = convert.str();
 
     const char *items = it.c_str();
     int height = numItems * 18 + 30;
     CImg<unsigned char> menu(300, height, 1, 3);
     menu.draw_text(1, 1, items, textcolor, 0, 1, 18);
-    CImgDisplay disp(menu, "Menu");
+    CImgDisplay disp(menu, "To change color click on selections");
     int s_number = 0;
 
 
@@ -721,28 +723,28 @@ void *change_color(int i) {
             disp.set_button();
             if (s_number == 2) {
                 objs[i]->color = black;
-                pColor = "black";
+                color[i] = "Black";
             } else if (s_number == 3) {
                 objs[i]->color = green;
-                pColor = "green";
+                color[i] = "Green";
             } else if (s_number == 4) {
                 objs[i]->color = red;
-                pColor = "red";
+                color[i] = "Red";
             } else if (s_number == 5) {
                 objs[i]->color = gray;
-                pColor = "gray";
+                color[i] = "Gray";
             } else if (s_number == 6) {
                 objs[i]->color = orange;
-                pColor = "orange";
+                color[i] = "Orange";
             } else if (s_number == 7) {
                 objs[i]->color = blue;
-                pColor = "blue";
+                color[i] = "Blue";
             }
         }
         menu.assign(300, height, 1, 3, 0);
         convert.str(std::string());
-        convert << "Current Color: " << pColor << "\nblack" << "\ngreen" << "\nred" << "\ngray" << "\norange"
-                << "\nblue";
+        convert << "Current Color: " << color[i] << "\nBlack" << "\nGreen" << "\nRed" << "\nGray" << "\nOrange"
+                << "\nBlue";
         it = convert.str();
 
         items = it.c_str();
@@ -840,7 +842,7 @@ void *change_light() {
     int height = numItems * 18 + 30;
     CImg<unsigned char> menu(300, height, 1, 3);
     menu.draw_text(1, 1, items, textcolor, 0, 1, 18);
-    CImgDisplay disp(menu, "Menu");
+    CImgDisplay disp(menu, "To change values click on them and use number keys to change values");
     int s_number = 0;
     bool key0, key1, key2, key3, key4, key5, key6, key7, key8, key9, change, neg, negchange;
     neg = true;
@@ -1175,14 +1177,14 @@ void *change_obj(int i) {
             << objs[i]->pow << "\nAmbient Value: "
             << objs[i]->ka << "\nReflective Value: " << objs[i]->flect
             << "\nTransparency Value: " << objs[i]->fract << "\nIndex of Refraction Value: "
-            << objs[i]->ior << "\nChange Color: " << pColor;
+            << objs[i]->ior << "\nChange Color: " << color[i];
     it = convert.str();
 
     const char *items = it.c_str();
     int height = numItems * 18 + 30;
     CImg<unsigned char> menu(250, height, 1, 3);
     menu.draw_text(1, 1, items, textcolor, 0, 1, 18);
-    CImgDisplay disp(menu, "Menu");
+    CImgDisplay disp(menu, "To change values click on selection and use left and right arrowkeys");
     int s_number = 0;
     bool left, right, change;
 
@@ -1203,7 +1205,7 @@ void *change_obj(int i) {
 
                 if (disp.is_keyARROWRIGHT() && !right) {
                     right = true;
-                    if (num < 1) {
+                    if (num < .9) {
                         num += .1;
                     }
                 } else if (!disp.is_keyARROWRIGHT() && right) { right = false; }
@@ -1218,6 +1220,8 @@ void *change_obj(int i) {
 
                 menu.assign(250, height, 1, 3, 0);
 
+                if(num < .1){num = 0;}
+
                 objs[i]->kk = num;
 
                 convert.str(std::string());
@@ -1225,7 +1229,7 @@ void *change_obj(int i) {
                         << "\nSpecular Power Value: " << objs[i]->pow << "\nAmbient Value: "
                         << objs[i]->ka << "\nReflective Value: " << objs[i]->flect
                         << "\nTransparency Value: " << objs[i]->fract << "\nIndex of Refraction Value: "
-                        << objs[i]->ior << "\nChange Color: " << pColor;
+                        << objs[i]->ior << "\nChange Color: " << color[i];
                 it = convert.str();
 
                 items = it.c_str();
@@ -1245,7 +1249,7 @@ void *change_obj(int i) {
 
                 if (disp.is_keyARROWRIGHT() && !right) {
                     right = true;
-                    if (num < 1) {
+                    if (num < .9) {
                         num += .1;
                     }
                 } else if (!disp.is_keyARROWRIGHT() && right) { right = false; }
@@ -1260,6 +1264,8 @@ void *change_obj(int i) {
 
                 menu.assign(250, height, 1, 3, 0);
 
+                if(num < .1){num = 0;}
+
                 objs[i]->ks = num;
 
                 convert.str(std::string());
@@ -1267,7 +1273,7 @@ void *change_obj(int i) {
                         << "\nSpecular Power Value: " << objs[i]->pow << "\nAmbient Value: "
                         << objs[i]->ka << "\nReflective Value: " << objs[i]->flect
                         << "\nTransparency Value: " << objs[i]->fract << "\nIndex of Refraction Value: "
-                        << objs[i]->ior << "\nChange Color: " << pColor;
+                        << objs[i]->ior << "\nChange Color: " << color[i];
                 it = convert.str();
 
                 items = it.c_str();
@@ -1302,6 +1308,7 @@ void *change_obj(int i) {
 
                 menu.assign(250, height, 1, 3, 0);
 
+                if(num < 1){num = 0;}
                 objs[i]->pow = num;
 
                 convert.str(std::string());
@@ -1309,7 +1316,7 @@ void *change_obj(int i) {
                         << "\nSpecular Power Value: " << objs[i]->pow << "\nAmbient Value: "
                         << objs[i]->ka << "\nReflective Value: " << objs[i]->flect
                         << "\nTransparency Value: " << objs[i]->fract << "\nIndex of Refraction Value: "
-                        << objs[i]->ior << "\nChange Color: " << pColor;
+                        << objs[i]->ior << "\nChange Color: " << color[i];
                 it = convert.str();
 
                 items = it.c_str();
@@ -1344,6 +1351,7 @@ void *change_obj(int i) {
 
                 menu.assign(250, height, 1, 3, 0);
 
+                if(num < .1){num = 0;}
                 objs[i]->ka = num;
 
                 convert.str(std::string());
@@ -1351,7 +1359,7 @@ void *change_obj(int i) {
                         << "\nSpecular Power Value: " << objs[i]->pow << "\nAmbient Value: "
                         << objs[i]->ka << "\nReflective Value: " << objs[i]->flect
                         << "\nTransparency Value: " << objs[i]->fract << "\nIndex of Refraction Value: "
-                        << objs[i]->ior << "\nChange Color: " << pColor;
+                        << objs[i]->ior << "\nChange Color: " << color[i];
                 it = convert.str();
 
                 items = it.c_str();
@@ -1386,6 +1394,7 @@ void *change_obj(int i) {
 
                 menu.assign(250, height, 1, 3, 0);
 
+                if(num < .1){num = 0;}
                 objs[i]->flect = num;
 
                 convert.str(std::string());
@@ -1393,7 +1402,7 @@ void *change_obj(int i) {
                         << "\nSpecular Power Value: " << objs[i]->pow << "\nAmbient Value: "
                         << objs[i]->ka << "\nReflective Value: " << objs[i]->flect
                         << "\nTransparency Value: " << objs[i]->fract << "\nIndex of Refraction Value: "
-                        << objs[i]->ior << "\nChange Color: " << pColor;
+                        << objs[i]->ior << "\nChange Color: " << color[i];
                 it = convert.str();
 
                 items = it.c_str();
@@ -1428,6 +1437,7 @@ void *change_obj(int i) {
 
                 menu.assign(250, height, 1, 3, 0);
 
+                if(num < .1){num = 0;}
                 objs[i]->fract = num;
 
                 convert.str(std::string());
@@ -1435,7 +1445,7 @@ void *change_obj(int i) {
                         << "\nSpecular Power Value: " << objs[i]->pow << "\nAmbient Value: "
                         << objs[i]->ka << "\nReflective Value: " << objs[i]->flect
                         << "\nTransparency Value: " << objs[i]->fract << "\nIndex of Refraction Value: "
-                        << objs[i]->ior << "\nChange Color: " << pColor;
+                        << objs[i]->ior << "\nChange Color: " << color[i];
                 it = convert.str();
 
                 items = it.c_str();
@@ -1470,6 +1480,7 @@ void *change_obj(int i) {
 
                 menu.assign(250, height, 1, 3, 0);
 
+                if(num < .1){num = 0;}
                 objs[i]->ior = num;
 
                 convert.str(std::string());
@@ -1477,7 +1488,7 @@ void *change_obj(int i) {
                         << "\nSpecular Power Value: " << objs[i]->pow << "\nAmbient Value: "
                         << objs[i]->ka << "\nReflective Value: " << objs[i]->flect
                         << "\nTransparency Value: " << objs[i]->fract << "\nIndex of Refraction Value: "
-                        << objs[i]->ior << "\nChange Color: " << pColor;
+                        << objs[i]->ior << "\nChange Color: " << color[i];
                 it = convert.str();
 
                 items = it.c_str();
@@ -1491,6 +1502,7 @@ void *change_obj(int i) {
 
             }
         } else if (s_number == 8) {
+            
             change_color(i);
             s_number = 0;
             menu.assign(250, height, 1, 3, 0);
@@ -1499,7 +1511,7 @@ void *change_obj(int i) {
                     << "\nSpecular Power Value: " << objs[i]->pow << "\nAmbient Value: "
                     << objs[i]->ka << "\nReflective Value: " << objs[i]->flect
                     << "\nTransparency Value: " << objs[i]->fract << "\nIndex of Refraction Value: "
-                    << objs[i]->ior << "\nChange Color: " << pColor;
+                    << objs[i]->ior << "\nChange Color: " << color[i];
             it = convert.str();
 
             items = it.c_str();
